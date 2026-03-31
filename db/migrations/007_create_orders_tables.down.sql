@@ -1,0 +1,4 @@
+-- Drop Tables
+DROP TABLE IF EXISTS order_cargos CASCADE;
+DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;

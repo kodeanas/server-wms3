@@ -1,0 +1,119 @@
+### User Endpoints
+
+### Create User
+POST http://localhost:8080/api/v1/users
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "08123456789",
+  "password": "securepassword123"
+}
+
+### List Users
+GET http://localhost:8080/api/v1/users?limit=10&offset=0
+
+### Get User by ID
+GET http://localhost:8080/api/v1/users/550e8400-e29b-41d4-a716-446655440000
+
+### Update User
+PUT http://localhost:8080/api/v1/users/550e8400-e29b-41d4-a716-446655440000
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "phone": "08987654321"
+}
+
+### Delete User
+DELETE http://localhost:8080/api/v1/users/550e8400-e29b-41d4-a716-446655440000
+
+---
+
+### Product Endpoints
+
+### Create Product
+POST http://localhost:8080/api/v1/products
+Content-Type: application/json
+
+{
+  "barcode": "8992341234567",
+  "qty": 100,
+  "price": "50000.00",
+  "category_id": "550e8400-e29b-41d4-a716-446655440001",
+  "sticker_id": "550e8400-e29b-41d4-a716-446655440002",
+  "user_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+
+### List Products
+GET http://localhost:8080/api/v1/products?limit=10&offset=0
+
+### Get Product by ID
+GET http://localhost:8080/api/v1/products/550e8400-e29b-41d4-a716-446655440003
+
+### Get Product by Barcode
+GET http://localhost:8080/api/v1/products/barcode/8992341234567
+
+### Get Products by Category
+GET http://localhost:8080/api/v1/products/category/550e8400-e29b-41d4-a716-446655440001?limit=10&offset=0
+
+### Update Product
+PUT http://localhost:8080/api/v1/products/550e8400-e29b-41d4-a716-446655440003
+Content-Type: application/json
+
+{
+  "qty": 95,
+  "price": "52000.00"
+}
+
+### Delete Product
+DELETE http://localhost:8080/api/v1/products/550e8400-e29b-41d4-a716-446655440003
+
+---
+
+### Order Endpoints
+
+### Create Order
+POST http://localhost:8080/api/v1/orders
+Content-Type: application/json
+
+{
+  "code": "ORD-2024-001",
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "buyer_id": "550e8400-e29b-41d4-a716-446655440004",
+  "type": "regular",
+  "total_item": 5,
+  "total_price_product": "250000.00",
+  "status": "on_progress"
+}
+
+### List Orders
+GET http://localhost:8080/api/v1/orders?limit=10&offset=0
+
+### Get Order by ID
+GET http://localhost:8080/api/v1/orders/550e8400-e29b-41d4-a716-446655440005
+
+### Get Order by Code
+GET http://localhost:8080/api/v1/orders/code/ORD-2024-001
+
+### Get Orders by Status
+GET http://localhost:8080/api/v1/orders/status/on_progress?limit=10&offset=0
+
+### Update Order
+PUT http://localhost:8080/api/v1/orders/550e8400-e29b-41d4-a716-446655440005
+Content-Type: application/json
+
+{
+  "status": "done",
+  "total_item": 5
+}
+
+### Delete Order
+DELETE http://localhost:8080/api/v1/orders/550e8400-e29b-41d4-a716-446655440005
+
+---
+
+### Health Check
+GET http://localhost:8080/health

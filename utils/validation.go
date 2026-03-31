@@ -3,13 +3,11 @@ package utils
 import (
 	"fmt"
 	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
-// MustBePositive ensures numeric value positive.
+// MustBePositive ensures numeric value is positive.
 func MustBePositive(value int64) error {
-	if value < 0 {
+	if value <= 0 {
 		return fmt.Errorf("value must be positive")
 	}
 	return nil
@@ -19,18 +17,31 @@ func MustBePositive(value int64) error {
 func CheckStatus(status string) error {
 	status = strings.ToLower(strings.TrimSpace(status))
 	switch status {
-	case "good", "damaged", "unavailable", "in-transit":
+	case "good", "damaged", "unavailable", "in-transit", "on-progress", "done":
 		return nil
 	default:
-		return fmt.Errorf("status must be good/damaged/unavailable/in-transit")
+		return fmt.Errorf("status must be one of: good, damaged, unavailable, in-transit, on-progress, done")
 	}
 }
 
-// BindJSONOrFail calls c.ShouldBindJSON and return 400 on failure.
-func BindJSONOrFail(c *gin.Context, obj interface{}) bool {
-	if err := c.ShouldBindJSON(obj); err != nil {
-		SendValidationError(c, err.Error())
-		return false
+// ValidateOrderStatus validates order status value.
+func ValidateOrderStatus(status string) error {
+	status = strings.ToLower(strings.TrimSpace(status))
+	switch status {
+	case "pending", "processing", "shipped", "delivered", "cancelled":
+		return nil
+	default:
+		return fmt.Errorf("status must be one of: pending, processing, shipped, delivered, cancelled")
 	}
-	return true
+}
+
+// ValidateOrderType validates order type value.
+func ValidateOrderType(orderType string) error {
+	orderType = strings.ToLower(strings.TrimSpace(orderType))
+	switch orderType {
+	case "regular", "wcargo", "xpedx", "same-day":
+		return nil
+	default:
+		return fmt.Errorf("order type must be one of: regular, wcargo, xpedx, same-day")
+	}
 }
