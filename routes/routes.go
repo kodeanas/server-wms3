@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"wms/config"
 	"wms/controller"
 	"wms/repositories"
 	"wms/services"
@@ -8,62 +9,35 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetupRoutes configures all routes for the application
+// SetupRoutes menginisialisasi semua endpoint pada router yang diberikan.
+// ini di-set di sini karena akan semakin banyak resource.
 func SetupRoutes(r *gin.Engine) {
-	// Initialize repositories
-	userRepo := repositories.NewUserRepository()
-	productRepo := repositories.NewProductRepository()
-	orderRepo := repositories.NewOrderRepository()
+	// Repositories
+	categoryRepo := repositories.NewCategoryRepository(config.DB)
 
-	// Initialize services
-	userService := services.NewUserService(userRepo)
-	productService := services.NewProductService(productRepo)
-	orderService := services.NewOrderService(orderRepo)
+	// Services
+	categoryService := services.NewCategoryService(categoryRepo)
 
-	// Initialize controllers
-	userCtrl := controller.NewUserController(userService)
-	productCtrl := controller.NewProductController(productService)
-	orderCtrl := controller.NewOrderController(orderService)
+	// Controllers
+	categoryController := controller.NewCategoryController(categoryService)
 
-	// Health check
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  "success",
-			"message": "WMS API is running",
-		})
-	})
-
-	// User routes
-	userGroup := r.Group("/api/v1/users")
+	// Public API
+	api := r.Group("/api")
 	{
-		userGroup.POST("", userCtrl.CreateUser)
-		userGroup.GET("", userCtrl.ListUsers)
-		userGroup.GET("/:id", userCtrl.GetUser)
-		userGroup.PUT("/:id", userCtrl.UpdateUser)
-		userGroup.DELETE("/:id", userCtrl.DeleteUser)
+		api.POST("/categories", categoryController.CreateCategory)
+		api.GET("/categories", categoryController.ListCategories)
 	}
 
-	// Product routes
-	productGroup := r.Group("/api/v1/products")
-	{
-		productGroup.POST("", productCtrl.CreateProduct)
-		productGroup.GET("", productCtrl.ListProducts)
-		productGroup.GET("/:id", productCtrl.GetProduct)
-		productGroup.GET("/barcode/:barcode", productCtrl.GetProductByBarcode)
-		productGroup.GET("/category/:categoryID", productCtrl.GetProductsByCategory)
-		productGroup.PUT("/:id", productCtrl.UpdateProduct)
-		productGroup.DELETE("/:id", productCtrl.DeleteProduct)
-	}
+	// contoh group lain (auth / protected) disiapkan untuk scale
+	// auth := r.Group("/auth")
+	// {
+	// 	auth.POST("/login", authController.Login)
+	// 	auth.POST("/register", authController.Register)
+	// }
 
-	// Order routes
-	orderGroup := r.Group("/api/v1/orders")
-	{
-		orderGroup.POST("", orderCtrl.CreateOrder)
-		orderGroup.GET("", orderCtrl.ListOrders)
-		orderGroup.GET("/:id", orderCtrl.GetOrder)
-		orderGroup.GET("/code/:code", orderCtrl.GetOrderByCode)
-		orderGroup.GET("/status/:status", orderCtrl.GetOrdersByStatus)
-		orderGroup.PUT("/:id", orderCtrl.UpdateOrder)
-		orderGroup.DELETE("/:id", orderCtrl.DeleteOrder)
-	}
+	// protected := r.Group("/api")
+	// protected.Use(authMiddleware)
+	// {
+	// 	protected.GET("/profile", profileController.GetProfile)
+	// }
 }
