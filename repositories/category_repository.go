@@ -47,7 +47,7 @@ func (r *categoryRepository) Create(category *models.Category) error {
 
 func (r *categoryRepository) GetBySlug(slug string) (*models.Category, error) {
 	var cat models.Category
-	if err := r.db.Where("slug = ? AND deleted_at IS NULL", slug).First(&cat).Error; err != nil {
+	if err := r.db.Unscoped().Where("slug = ?", slug).First(&cat).Error; err != nil {
 		return nil, err
 	}
 	return &cat, nil
@@ -55,7 +55,7 @@ func (r *categoryRepository) GetBySlug(slug string) (*models.Category, error) {
 
 func (r *categoryRepository) GetSlugLike(slug string) ([]models.Category, error) {
 	var categories []models.Category
-	if err := r.db.Where("slug LIKE ? AND deleted_at IS NULL", slug+"%").Find(&categories).Error; err != nil {
+	if err := r.db.Unscoped().Where("slug LIKE ?", slug+"%").Find(&categories).Error; err != nil {
 		return nil, err
 	}
 	return categories, nil

@@ -106,36 +106,48 @@ func (s *categoryService) generateSlugFromName(name string) string {
 
 // generateUniqueSlug generates a unique slug by checking existing ones
 func (s *categoryService) generateUniqueSlug(baseSlug string) (string, error) {
-	// Check if base slug exists
 	_, err := s.repo.GetBySlug(baseSlug)
 	if err != nil {
-		// Slug doesn't exist, return it
+		// Slug doesn't exist, so we can use it.
 		return baseSlug, nil
 	}
 
-	// Get all similar slugs
 	similarSlugs, err := s.repo.GetSlugLike(baseSlug)
 	if err != nil {
 		return "", err
 	}
 
-	// Extract numbers from similar slugs and find the highest number
+	// Find the highest suffix number among the similar slugs.
 	maxNum := 0
 	for _, cat := range similarSlugs {
-		if cat.Slug == baseSlug {
-			maxNum = 0
+		slug := cat.Slug
+
+		// We only care about slugs that start with our base slug.
+		if !strings.HasPrefix(slug, baseSlug) {
 			continue
 		}
-		// Try to extract number from slug like "otomotif1", "otomotif2"
-		parts := strings.Split(cat.Slug, baseSlug)
-		if len(parts) > 1 && parts[1] != "" {
-			if num, err := strconv.Atoi(parts[1]); err == nil && num > maxNum {
-				maxNum = num
-			}
+
+		// Get the suffix part (e.g., "1", "2" from "otomotif1", "otomotif2").
+		suffixStr := strings.TrimPrefix(slug, baseSlug)
+
+		// The existence of the base slug itself implies that the next number will be at least 1.
+		if suffixStr == "" {
+			continue
+		}
+
+		// Try to convert the suffix to an integer.
+		num, err := strconv.Atoi(suffixStr)
+		if err != nil {
+			// Suffix is not a number (e.g., "otomotif-baru"), so we ignore it.
+			continue
+		}
+
+		// If this suffix number is the highest we've seen, remember it.
+		if num > maxNum {
+			maxNum = num
 		}
 	}
 
-	// Generate new slug with incremented number
 	newSlug := fmt.Sprintf("%s%d", baseSlug, maxNum+1)
 	return newSlug, nil
 }
