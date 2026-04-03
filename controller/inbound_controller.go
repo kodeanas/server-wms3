@@ -21,6 +21,7 @@ type InboundRequest struct {
 	Price      float64 `json:"price" binding:"required"`
 	CategoryID *string `json:"category_id,omitempty"`
 	StickerID  *string `json:"sticker_id,omitempty"`
+	Status     string  `json:"status" binding:"required,oneof=good abnormal damaged non"`
 }
 
 func generateUniqueBarcode() string {
@@ -125,7 +126,7 @@ func InboundManualHandler(db *gorm.DB) gin.HandlerFunc {
 			Name:       req.Name,
 			Item:       req.Item,
 			Price:      req.Price,
-			Status:     "non", // default status valid
+			Status:     req.Status, // default status valid
 		}
 		if err := db.Create(&pending).Error; err != nil {
 			utils.SendError(c, 500, err.Error())
