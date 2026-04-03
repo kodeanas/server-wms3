@@ -194,6 +194,20 @@ func (s *stickerService) UpdateSticker(id string, input UpdateStickerPayload) (*
 	}
 	if input.Name != "" {
 		sticker.Name = input.Name
+		// Jika nama berubah, update slug
+		newSlug := s.generateSlugFromName(input.Name)
+		if newSlug != sticker.Slug {
+			existing, _ := s.repo.GetBySlug(newSlug)
+			if existing != nil && existing.ID != sticker.ID {
+				uniqueSlug, err := s.generateUniqueSlug(newSlug)
+				if err != nil {
+					return nil, err
+				}
+				sticker.Slug = uniqueSlug
+			} else {
+				sticker.Slug = newSlug
+			}
+		}
 	}
 	if input.Slug != "" {
 		// Generate slug from input and check uniqueness

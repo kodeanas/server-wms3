@@ -44,6 +44,20 @@ func (s *categoryService) UpdateCategory(id string, input UpdateCategoryPayload)
 	}
 	if input.Name != "" {
 		category.Name = input.Name
+		// Jika nama berubah, update slug
+		newSlug := s.generateSlugFromName(input.Name)
+		if newSlug != category.Slug {
+			existing, _ := s.repo.GetBySlug(newSlug)
+			if existing != nil && existing.ID != category.ID {
+				uniqueSlug, err := s.generateUniqueSlug(newSlug)
+				if err != nil {
+					return nil, err
+				}
+				category.Slug = uniqueSlug
+			} else {
+				category.Slug = newSlug
+			}
+		}
 	}
 	if input.Slug != "" {
 		slug := s.generateSlugFromName(input.Slug)
