@@ -20,6 +20,7 @@ type ProductMaster struct {
 	PriceWarehouse   float64        `gorm:"type:decimal(15,2)" json:"price_warehouse"`
 	CategoryID       string         `gorm:"type:char(36)" json:"category_id"`
 	StickerID        string         `gorm:"type:char(36)" json:"sticker_id"`
+	ProductPendingID string         `gorm:"type:char(36)" json:"product_pending_id"`
 	TypeID           string         `json:"type_id" gorm:"-"` // hanya untuk response, tidak masuk DB
 	IsSKU            bool           `gorm:"default:false" json:"is_sku"`
 	Location         string         `gorm:"size:50" json:"location"`

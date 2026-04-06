@@ -67,13 +67,20 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 		return 0, 0, []string{fmt.Sprintf("Header mapping tidak valid")}
 	}
 
-	// Ambil semua kategori dari DB untuk pencocokan nama
+	// Ambil semua kategori dan sticker dari DB
 	var categories []models.Category
-	if err := db.Find(&categories).Error; err != nil {
-		return 0, 0, []string{fmt.Sprintf("Gagal mengambil kategori: %v", err)}
+	var stickers []models.Sticker
+	if req.TypeProduct == "reguler" {
+		if err := db.Find(&categories).Error; err != nil {
+			return 0, 0, []string{fmt.Sprintf("Gagal mengambil kategori: %v", err)}
+		}
+	} else if req.TypeProduct == "sticker" {
+		if err := db.Find(&stickers).Error; err != nil {
+			return 0, 0, []string{fmt.Sprintf("Gagal mengambil sticker: %v", err)}
+		}
 	}
 
-	// 3. Proses setiap row: kategorikan otomatis, validasi, insert jika valid
+	// 3. Proses setiap row: paksa tipe produk sesuai pilihan user, validasi, insert jika valid
 	for _, row := range req.Rows {
 		if len(row) <= idxPrice || len(row) <= idxQty || len(row) <= idxName || len(row) <= idxBarcode {
 			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: kolom kurang lengkap: %v", row))
@@ -93,64 +100,68 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			continue
 		}
 
-		// Otomatis tentukan tipe produk per barang berdasarkan kolom kategori
-		var tipeBarang string
 		var categoryID, stickerID, location, typeID string
-		tipeBarang = ""
 		categoryID = ""
 		stickerID = ""
 		location = ""
 		typeID = ""
 
-		// Cek kolom kategori
-		kategoriNama := ""
-		if idxCategory != -1 && len(row) > idxCategory {
-			kategoriNama = strings.TrimSpace(row[idxCategory])
-		}
-
-		// Logic: jika kategori ditemukan di DB, maka reguler, jika tidak, sticker
-		foundCategory := false
-		for _, cat := range categories {
-			if strings.EqualFold(strings.TrimSpace(cat.Name), kategoriNama) {
-				foundCategory = true
-				categoryID = cat.ID.String()
-				break
-			}
-		}
-		if foundCategory {
-			tipeBarang = "reguler"
-			location = "staging_reguler"
-			typeID = "categories"
-		} else {
-			tipeBarang = "sticker"
-			location = "staging_sticker"
-			typeID = "sticker"
-		}
-
-		// Validasi: reguler harus >= 100rb dan ada category, sticker harus < 100rb
-		if tipeBarang == "reguler" {
+		if req.TypeProduct == "reguler" {
+			// Validasi harga
 			if price < 100000 {
 				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: harga kurang dari 100rb untuk reguler: %v", row))
 				skipped++
 				continue
 			}
-			if categoryID == "" {
+			// Validasi kategori
+			kategoriNama := ""
+			if idxCategory != -1 && len(row) > idxCategory {
+				kategoriNama = strings.TrimSpace(row[idxCategory])
+			}
+			foundCategory := false
+			for _, cat := range categories {
+				if strings.EqualFold(strings.TrimSpace(cat.Name), kategoriNama) {
+					foundCategory = true
+					categoryID = cat.ID.String()
+					break
+				}
+			}
+			if !foundCategory || categoryID == "" {
 				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: kategori tidak ditemukan di DB: '%s' (row: %v)", kategoriNama, row))
 				skipped++
 				continue
 			}
-		} else if tipeBarang == "sticker" {
+			location = "staging_reguler"
+			typeID = "categories"
+		} else if req.TypeProduct == "sticker" {
+			// Validasi harga
 			if price >= 100000 {
 				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: harga >= 100rb untuk sticker: %v", row))
 				skipped++
 				continue
 			}
+			// Validasi sticker range
+			foundSticker := false
+			for _, sticker := range stickers {
+				if sticker.MinPrice != nil && sticker.MaxPrice != nil && price >= float64(*sticker.MinPrice) && price <= float64(*sticker.MaxPrice) {
+					stickerID = sticker.ID.String()
+					foundSticker = true
+					break
+				}
+			}
+			if !foundSticker || stickerID == "" {
+				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: tidak ada sticker dengan range harga sesuai: %v", row))
+				skipped++
+				continue
+			}
+			location = "staging_sticker"
+			typeID = "sticker"
 		}
 
 		master := models.ProductMaster{
 			DocumentID:       doc.ID.String(),
 			Barcode:          barcode,
-			BarcodeWarehouse: "",
+			BarcodeWarehouse: barcode,
 			Name:             name,
 			NameWarehouse:    "",
 			Item:             qty,

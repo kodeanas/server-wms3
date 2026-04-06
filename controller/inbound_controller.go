@@ -27,7 +27,7 @@ func ListAllProductMastersHandler(db *gorm.DB) gin.HandlerFunc {
 // Tambahkan variabel global untuk service
 var inboundService = services.NewInboundService()
 
-// Handler untuk upload bulk file (step 1)
+// Handler untuk upload dan proses bulk sekaligus (single step)
 func InboundBulkUploadHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		supplier := c.PostForm("supplier")
@@ -48,25 +48,34 @@ func InboundBulkUploadHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Kirim headers dan rows ke FE untuk proses mapping
-		utils.SendSuccess(c, gin.H{
-			"headers":      headers,
-			"rows":         rows,
-			"filename":     header.Filename,
-			"supplier":     supplier,
-			"type_product": typeProduct,
-			"type":         fileType,
-		}, "File berhasil diupload", nil, http.StatusOK)
-	}
-}
+		// Mapping otomatis (asumsi header sudah sesuai mapping FE, atau FE kirim mapping di form-data jika perlu)
+		mapping := models.BulkInboundMapping{
+			BarcodeHeader: "barcode", // default, bisa diambil dari FE jika dinamis
+			NameHeader:    "name",
+			QtyHeader:     "qty",
+			PriceHeader:   "price",
+		}
+		// Jika FE kirim mapping, ambil dari form-data
+		if v := c.PostForm("barcode_header"); v != "" {
+			mapping.BarcodeHeader = v
+		}
+		if v := c.PostForm("name_header"); v != "" {
+			mapping.NameHeader = v
+		}
+		if v := c.PostForm("qty_header"); v != "" {
+			mapping.QtyHeader = v
+		}
+		if v := c.PostForm("price_header"); v != "" {
+			mapping.PriceHeader = v
+		}
 
-// Handler untuk proses bulk setelah mapping (step 2)
-func InboundBulkProcessHandler(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req models.BulkInboundRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			utils.SendError(c, 400, "Request tidak valid: "+err.Error())
-			return
+		req := models.BulkInboundRequest{
+			Supplier:    supplier,
+			TypeProduct: typeProduct,
+			Type:        fileType,
+			Mapping:     mapping,
+			Rows:        rows,
+			Headers:     headers,
 		}
 
 		inserted, skipped, skipDetails := inboundService.InboundBulkProcess(req, db)
@@ -74,6 +83,7 @@ func InboundBulkProcessHandler(db *gorm.DB) gin.HandlerFunc {
 			"inserted":     inserted,
 			"skipped":      skipped,
 			"skip_details": skipDetails,
+			"filename":     header.Filename,
 		}, "Bulk inbound selesai", nil, http.StatusOK)
 	}
 }
