@@ -43,10 +43,6 @@ func (ctl *ProductMasterSummaryController) GetSummary(c *gin.Context) {
 	}
 	// Set waktu to ke akhir hari agar data pada tanggal to tetap terambil
 	to = to.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
-	if err != nil {
-		utils.SendError(c, http.StatusBadRequest, "Invalid to date format (yyyy-mm-dd)")
-		return
-	}
 	summary, err := ctl.service.GetSummary(from, to)
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
