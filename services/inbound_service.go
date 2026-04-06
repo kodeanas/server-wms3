@@ -165,6 +165,28 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 		} else {
 			stickerIDPtr = &stickerID
 		}
+		pending := models.ProductPending{
+			DocumentID: doc.ID.String(),
+			Barcode:    barcode,
+			Name:       name,
+			Item:       qty,
+			Price:      price,
+			Status:     "good",
+			IsSKU:      false,
+			Note:       "",
+		}
+		if err := db.Create(&pending).Error; err != nil {
+			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_pending: %v", row))
+			skipped++
+			continue
+		}
+		productPendingID := pending.ID.String()
+		var productPendingIDPtr *string
+		if productPendingID == "" {
+			productPendingIDPtr = nil
+		} else {
+			productPendingIDPtr = &productPendingID
+		}
 		master := models.ProductMaster{
 			DocumentID:       doc.ID.String(),
 			Barcode:          barcode,
@@ -177,27 +199,13 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			PriceWarehouse:   0,
 			CategoryID:       categoryIDPtr,
 			StickerID:        stickerIDPtr,
+			ProductPendingID: productPendingIDPtr,
 			Location:         location,
 			TypeID:           typeID,
 			TypeOut:          "cargo",
 		}
-		pending := models.ProductPending{
-			DocumentID: doc.ID.String(),
-			Barcode:    barcode,
-			Name:       name,
-			Item:       qty,
-			Price:      price,
-			Status:     "good",
-			IsSKU:      false,
-			Note:       "",
-		}
 		if err := db.Create(&master).Error; err != nil {
 			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_master: %v | DB error: %v", row, err))
-			skipped++
-			continue
-		}
-		if err := db.Create(&pending).Error; err != nil {
-			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_pending: %v", row))
 			skipped++
 			continue
 		}
