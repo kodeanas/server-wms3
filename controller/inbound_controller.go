@@ -4,6 +4,7 @@ package controller
 import (
 	"net/http"
 
+	dto "wms/dto/response/inbound"
 	"wms/models"
 	"wms/services"
 	"wms/utils"
@@ -15,12 +16,67 @@ import (
 
 func ListAllProductMastersHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var masters []models.ProductMaster
+		var masters []models.ProductPending
 		if err := db.Order("created_at DESC").Find(&masters).Error; err != nil {
 			utils.SendError(c, 500, err.Error())
 			return
 		}
 		utils.SendSuccess(c, masters, "List master data", nil, http.StatusOK)
+	}
+}
+
+// func ListProductManualHandler(db *gorm.DB) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		var manuals []models.ProductPending
+// 		if err := db.Order("created_at DESC").Find(&manuals).Error; err != nil {
+// 			utils.SendError(c, 500, err.Error())
+// 			return
+// 		}
+// 		utils.SendSuccess(c, manuals, "List manual data", nil, http.StatusOK)
+// 	}
+// }
+
+func ListProductManualHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var results []dto.ProductManualResponse
+
+		err := db.Table("product_pendings pp").
+			Select(`
+				pp.id,
+				pp.document_id,
+				pp.barcode,
+				pp.name,
+				pp.item,
+				pp.price,
+				pp.status,
+				pp.note,
+				pp.created_at,
+
+				pm.price_warehouse,
+				c.name AS category_name,
+				s.name AS sticker_name
+			`).
+			Joins(`
+				LEFT JOIN product_masters pm 
+				ON pm.product_pending_id = pp.id
+			`).
+			Joins(`
+				LEFT JOIN categories c 
+				ON c.id = pm.category_id
+			`).
+			Joins(`
+				LEFT JOIN stickers s 
+				ON s.id = pm.sticker_id
+			`).
+			Order("pp.created_at DESC").
+			Scan(&results).Error
+
+		if err != nil {
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+
+		utils.SendSuccess(c, results, "List manual data", nil, http.StatusOK)
 	}
 }
 

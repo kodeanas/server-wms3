@@ -71,7 +71,8 @@ func SetupRoutes(r *gin.Engine) {
 
 		// Inbound Manual
 		api.POST("/scanin/manual", controller.InboundManualHandler(config.DB))
-		api.GET("/scanin/manual", controller.ListAllProductMastersHandler(config.DB))
+		// api.GET("/scanin/manual", controller.ListAllProductMastersHandler(config.DB))
+		api.GET("/scanin/manual", controller.ListProductManualHandler(config.DB))
 
 		// Inbound Bulk (single API)
 		api.POST("/inbound/bulk-upload", controller.InboundBulkUploadHandler(config.DB))

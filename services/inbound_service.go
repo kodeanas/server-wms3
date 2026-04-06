@@ -8,6 +8,7 @@ import (
 	"wms/models"
 	"wms/utils"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -214,118 +215,118 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 	return inserted, skipped, skipDetails
 }
 
-func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (models.ProductPending, models.ProductMaster, error) {
-	// Logic generate barcode
-	barcode := generateUniqueBarcode()
-	barcodeWarehouse := generateUniqueBarcode()
+func strPtr(s string) *string {
+	return &s
+}
 
-	// Logic dokumen: cari/buat dokumen manual
+func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (models.ProductPending, models.ProductMaster, error) {
+	barcode := generateUniqueBarcode()
+
 	doc, err := getOrCreateManualDocument(db)
 	if err != nil {
 		return models.ProductPending{}, models.ProductMaster{}, err
 	}
 
-	// Logic BE: tentukan category_id/sticker_id otomatis dan PriceWarehouse
-	var categoryID, stickerID, typeID string
-	var priceWarehouse float64 = req.Price
+	var categoryID *string
+	var stickerID *string
+	var typeID string
+	priceWarehouse := req.Price
 
-	// Insert ke ProductPending terlebih dahulu untuk dapatkan ID
-	pending := models.ProductPending{
-		DocumentID: doc.ID.String(),
-		Barcode:    barcode,
-		Name:       req.Name,
-		Item:       req.Item,
-		Price:      req.Price,
-		Status:     req.Status, // default status valid
-	}
-	if err := db.Create(&pending).Error; err != nil {
-		return pending, models.ProductMaster{}, err
-	}
-
-	var productPendingIDPtr *string
-	productPendingID := pending.ID.String()
-	if productPendingID == "" {
-		productPendingIDPtr = nil
-	} else {
-		productPendingIDPtr = &productPendingID
-	}
-
-	var categoryIDPtr, stickerIDPtr *string
-
-	var master models.ProductMaster
+	// =========================
+	// HITUNG LOGIC (TANPA MASTER DULU)
+	// =========================
 	if req.Price >= 100000 {
-		if req.CategoryID != nil && *req.CategoryID != "" {
-			categoryID = *req.CategoryID
-			categoryIDPtr = &categoryID
-			// Ambil diskon kategori
+		typeID = "categories"
+
+		if req.CategoryID != nil {
+			categoryID = req.CategoryID
+
 			var category models.Category
-			if err := db.Where("id = ?", categoryID).First(&category).Error; err == nil && category.Discount != nil {
+			if err := db.Where("id = ?", *categoryID).First(&category).Error; err == nil && category.Discount != nil {
 				discount := float64(*category.Discount)
 				priceWarehouse = req.Price * (1 - discount/100)
 			}
 		} else {
 			categoryIDPtr = nil
 		}
-		stickerIDPtr = nil
-		typeID = "categories"
 
-		master = models.ProductMaster{
-			DocumentID:       doc.ID.String(),
-			Barcode:          barcode,
-			BarcodeWarehouse: barcodeWarehouse,
-			Name:             req.Name,
-			NameWarehouse:    "Manual",
-			Item:             req.Item,
-			Price:            req.Price,
-			PriceWarehouse:   priceWarehouse,
-			CategoryID:       categoryIDPtr,
-			StickerID:        stickerIDPtr,
-			ProductPendingID: productPendingIDPtr,
-			TypeID:           typeID,
-			Location:         "staging_reguler",
-			TypeOut:          "cargo",
-		}
+		stickerID = nil
+
 	} else {
-		if req.StickerID != nil && *req.StickerID != "" {
-			stickerID = *req.StickerID
-			stickerIDPtr = &stickerID
-			// Cari sticker sesuai range harga
+		typeID = "sticker"
+
+		if req.StickerID != nil {
+			stickerID = req.StickerID
+
 			var sticker models.Sticker
-			if err := db.Where("id = ?", stickerID).First(&sticker).Error; err == nil && sticker.MinPrice != nil && sticker.MaxPrice != nil {
-				if req.Price >= float64(*sticker.MinPrice) && req.Price <= float64(*sticker.MaxPrice) && sticker.FixedPrice != nil {
+			if err := db.Where("id = ?", *stickerID).First(&sticker).Error; err == nil &&
+				sticker.MinPrice != nil && sticker.MaxPrice != nil {
+
+				if req.Price >= float64(*sticker.MinPrice) &&
+					req.Price <= float64(*sticker.MaxPrice) &&
+					sticker.FixedPrice != nil {
+
 					priceWarehouse = float64(*sticker.FixedPrice)
 				}
 			}
+
 		} else {
-			// Jika stickerID tidak ada, cari sticker yang cocok dengan range harga
 			var sticker models.Sticker
-			if err := db.Where("min_price <= ? AND max_price >= ?", req.Price, req.Price).First(&sticker).Error; err == nil && sticker.FixedPrice != nil {
-				stickerID = sticker.ID.String()
-				stickerIDPtr = &stickerID
+			if err := db.Where("min_price <= ? AND max_price >= ?", req.Price, req.Price).
+				First(&sticker).Error; err == nil && sticker.FixedPrice != nil {
+
+				id := sticker.ID.String()
+				stickerID = &id
 				priceWarehouse = float64(*sticker.FixedPrice)
 			} else {
 				stickerIDPtr = nil
 			}
 		}
-		categoryIDPtr = nil
-		typeID = "sticker"
 
-		master = models.ProductMaster{
-			DocumentID:       doc.ID.String(),
-			Barcode:          barcode,
-			BarcodeWarehouse: barcodeWarehouse,
-			Name:             req.Name,
-			NameWarehouse:    "Manual",
-			Item:             req.Item,
-			Price:            req.Price,
-			PriceWarehouse:   priceWarehouse,
-			CategoryID:       categoryIDPtr,
-			StickerID:        stickerIDPtr,
-			ProductPendingID: productPendingIDPtr,
-			TypeID:           typeID,
-			Location:         "staging_sticker",
-			TypeOut:          "cargo",
-		}
+		categoryID = nil
+	}
+
+	// =========================
+	// INSERT PENDING
+	// =========================
+	pending := models.ProductPending{
+		ID:         uuid.New(),
+		DocumentID: doc.ID.String(),
+		Barcode:    barcode,
+		Name:       req.Name,
+		Item:       req.Item,
+		Price:      req.Price,
+		Status:     req.Status,
+	}
+
+	if err := db.Create(&pending).Error; err != nil {
+		return pending, models.ProductMaster{}, err
+	}
+
+	// =========================
+	// INSERT MASTER (SETELAH ADA pending.ID)
+	// =========================
+	master := models.ProductMaster{
+		DocumentID:       doc.ID.String(),
+		ProductPendingID: strPtr(pending.ID.String()), // ✅ FIX
+		Barcode:          barcode,
+		BarcodeWarehouse: barcode,
+		Name:             req.Name,
+		NameWarehouse:    "Manual",
+		Item:             req.Item,
+		Price:            req.Price,
+		PriceWarehouse:   priceWarehouse,
+		CategoryID:       categoryID,
+		StickerID:        stickerID,
+		TypeID:           typeID,
+		TypeOut:          "cargo",
+	}
+
+	// lokasi beda tergantung type
+	if typeID == "categories" {
+		master.Location = "staging_reguler"
+	} else {
+		master.Location = "staging_sticker"
 	}
 
 	if err := db.Create(&master).Error; err != nil {
