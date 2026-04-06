@@ -45,28 +45,24 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 		return 0, 0, []string{fmt.Sprintf("Gagal simpan dokumen: %v", err)}
 	}
 
-	// 2. Mapping header index
-	idxBarcode, idxName, idxQty, idxPrice, idxCategory := -1, -1, -1, -1, -1
-	for i, h := range req.Headers {
-		if h == req.Mapping.BarcodeHeader {
-			idxBarcode = i
-		}
-		if h == req.Mapping.NameHeader {
-			idxName = i
-		}
-		if h == req.Mapping.QtyHeader {
-			idxQty = i
-		}
-		if h == req.Mapping.PriceHeader {
-			idxPrice = i
-		}
-		if strings.ToLower(h) == "category" || strings.ToLower(h) == "kategori" {
-			idxCategory = i
-		}
+	// 2. Hardcode mapping index kolom sesuai urutan excel
+	var idxBarcode, idxName, idxCategory, idxQty, idxPrice int
+	if req.TypeProduct == "sticker" {
+		// Barcode, deskripsi, qty, unit price
+		idxBarcode = 0
+		idxName = 1
+		idxQty = 2
+		idxPrice = 3
+		idxCategory = -1 // tidak ada kolom kategori
+	} else {
+		// barcode, description, category, qty, unit price, bast, discount, price after discount
+		idxBarcode = 0
+		idxName = 1
+		idxCategory = 2
+		idxQty = 3
+		idxPrice = 4
 	}
-	if idxBarcode == -1 || idxName == -1 || idxQty == -1 || idxPrice == -1 {
-		return 0, 0, []string{fmt.Sprintf("Header mapping tidak valid")}
-	}
+	// Tidak perlu validasi mapping, asumsikan urutan selalu benar
 
 	// Ambil semua kategori dan sticker dari DB
 	var categories []models.Category
@@ -159,21 +155,16 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			typeID = "sticker"
 		}
 
-		master := models.ProductMaster{
-			DocumentID:       doc.ID.String(),
-			Barcode:          barcode,
-			BarcodeWarehouse: barcode,
-			Name:             name,
-			NameWarehouse:    "",
-			Item:             qty,
-			ItemWarehouse:    0,
-			Price:            price,
-			PriceWarehouse:   0,
-			CategoryID:       &categoryID,
-			StickerID:        &stickerID,
-			Location:         location,
-			TypeID:           typeID,
-			TypeOut:          "cargo",
+		var categoryIDPtr, stickerIDPtr *string
+		if categoryID == "" {
+			categoryIDPtr = nil
+		} else {
+			categoryIDPtr = &categoryID
+		}
+		if stickerID == "" {
+			stickerIDPtr = nil
+		} else {
+			stickerIDPtr = &stickerID
 		}
 		pending := models.ProductPending{
 			DocumentID: doc.ID.String(),
@@ -181,17 +172,41 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			Name:       name,
 			Item:       qty,
 			Price:      price,
-			Status:     "GOOD",
+			Status:     "good",
 			IsSKU:      false,
 			Note:       "",
 		}
-		if err := db.Create(&master).Error; err != nil {
-			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_master: %v | DB error: %v", row, err))
+		if err := db.Create(&pending).Error; err != nil {
+			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_pending: %v", row))
 			skipped++
 			continue
 		}
-		if err := db.Create(&pending).Error; err != nil {
-			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_pending: %v", row))
+		productPendingID := pending.ID.String()
+		var productPendingIDPtr *string
+		if productPendingID == "" {
+			productPendingIDPtr = nil
+		} else {
+			productPendingIDPtr = &productPendingID
+		}
+		master := models.ProductMaster{
+			DocumentID:       doc.ID.String(),
+			Barcode:          barcode,
+			BarcodeWarehouse: barcode,
+			Name:             name,
+			NameWarehouse:    name,
+			Item:             qty,
+			ItemWarehouse:    0,
+			Price:            price,
+			PriceWarehouse:   0,
+			CategoryID:       categoryIDPtr,
+			StickerID:        stickerIDPtr,
+			ProductPendingID: productPendingIDPtr,
+			Location:         location,
+			TypeID:           typeID,
+			TypeOut:          "cargo",
+		}
+		if err := db.Create(&master).Error; err != nil {
+			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_master: %v | DB error: %v", row, err))
 			skipped++
 			continue
 		}
@@ -231,6 +246,8 @@ func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (
 				discount := float64(*category.Discount)
 				priceWarehouse = req.Price * (1 - discount/100)
 			}
+		} else {
+			categoryIDPtr = nil
 		}
 
 		stickerID = nil
@@ -261,6 +278,8 @@ func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (
 				id := sticker.ID.String()
 				stickerID = &id
 				priceWarehouse = float64(*sticker.FixedPrice)
+			} else {
+				stickerIDPtr = nil
 			}
 		}
 
