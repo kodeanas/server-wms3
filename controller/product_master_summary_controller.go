@@ -51,5 +51,10 @@ func (ctl *ProductMasterSummaryController) GetSummary(c *gin.Context) {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
+	// Jika summary kosong, balikan data null/{}
+	if summary.TotalPieces == 0 && summary.TotalHargaAsal == 0 && summary.TotalHargaGudang == 0 {
+		utils.SendSuccess(c, nil, "Ringkasan Pieces", nil, http.StatusOK)
+		return
+	}
 	utils.SendSuccess(c, summary, "Ringkasan pieces", nil, http.StatusOK)
 }
