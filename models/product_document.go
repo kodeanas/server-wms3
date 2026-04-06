@@ -19,7 +19,7 @@ type ProductDocument struct {
 	HeaderName    string         `gorm:"size:255" json:"header_name"`
 	HeaderItem    string         `gorm:"size:255" json:"header_item"`
 	HeaderPrice   string         `gorm:"size:255" json:"header_price"`
-	UserID        string         `gorm:"type:char(36)" json:"user_id"`
+	UserID        *string        `gorm:"type:char(36)" json:"user_id"`
 	Supplier      string         `gorm:"size:255" json:"supplier"`
 	TypeProduct   string         `gorm:"size:50" json:"type_product"`
 	CreatedAt     time.Time      `gorm:"autoCreateTime" json:"created_at"`

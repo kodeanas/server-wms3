@@ -38,7 +38,7 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 		HeaderPrice:   req.Mapping.PriceHeader,
 		Supplier:      req.Supplier,
 		TypeProduct:   req.TypeProduct,
-		UserID:        "USER ID", // bisa diambil dari context jika ada auth
+		UserID:        nil, // bisa diambil dari context jika ada auth
 	}
 	if err := db.Create(&doc).Error; err != nil {
 		return 0, 0, []string{fmt.Sprintf("Gagal simpan dokumen: %v", err)}
@@ -168,8 +168,8 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			ItemWarehouse:    0,
 			Price:            price,
 			PriceWarehouse:   0,
-			CategoryID:       categoryID,
-			StickerID:        stickerID,
+			CategoryID:       &categoryID,
+			StickerID:        &stickerID,
 			Location:         location,
 			TypeID:           typeID,
 			TypeOut:          "cargo",
@@ -236,8 +236,8 @@ func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (
 			Item:             req.Item,
 			Price:            req.Price,
 			PriceWarehouse:   priceWarehouse,
-			CategoryID:       categoryID,
-			StickerID:        stickerID,
+			CategoryID:       &categoryID,
+			StickerID:        &stickerID,
 			TypeID:           typeID,
 			Location:         "staging_reguler",
 			TypeOut:          "cargo",
@@ -272,8 +272,8 @@ func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (
 			Item:             req.Item,
 			Price:            req.Price,
 			PriceWarehouse:   priceWarehouse,
-			CategoryID:       categoryID,
-			StickerID:        stickerID,
+			CategoryID:       &categoryID,
+			StickerID:        &stickerID,
 			TypeID:           typeID,
 			Location:         "staging_sticker",
 			TypeOut:          "cargo",
