@@ -15,7 +15,7 @@ import (
 
 func ListAllProductMastersHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var masters []models.ProductMaster
+		var masters []models.ProductPending
 		if err := db.Order("created_at DESC").Find(&masters).Error; err != nil {
 			utils.SendError(c, 500, err.Error())
 			return
@@ -26,57 +26,6 @@ func ListAllProductMastersHandler(db *gorm.DB) gin.HandlerFunc {
 
 // Tambahkan variabel global untuk service
 var inboundService = services.NewInboundService()
-
-// Handler untuk upload bulk file (step 1)
-func InboundBulkUploadHandler(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		supplier := c.PostForm("supplier")
-		typeProduct := c.PostForm("type_product") // reguler/sticker
-		fileType := c.PostForm("type")            // csv/xlsx/xls
-
-		file, header, err := c.Request.FormFile("file")
-		if err != nil {
-			utils.SendError(c, 400, "File tidak ditemukan")
-			return
-		}
-		defer file.Close()
-
-		// Parse file
-		headers, rows, err := utils.ParseBulkFile(file, fileType)
-		if err != nil {
-			utils.SendError(c, 400, "Gagal membaca file: "+err.Error())
-			return
-		}
-
-		// Kirim headers dan rows ke FE untuk proses mapping
-		utils.SendSuccess(c, gin.H{
-			"headers":      headers,
-			"rows":         rows,
-			"filename":     header.Filename,
-			"supplier":     supplier,
-			"type_product": typeProduct,
-			"type":         fileType,
-		}, "File berhasil diupload", nil, http.StatusOK)
-	}
-}
-
-// Handler untuk proses bulk setelah mapping (step 2)
-func InboundBulkProcessHandler(db *gorm.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req models.BulkInboundRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			utils.SendError(c, 400, "Request tidak valid: "+err.Error())
-			return
-		}
-
-		inserted, skipped, skipDetails := inboundService.InboundBulkProcess(req, db)
-		utils.SendSuccess(c, gin.H{
-			"inserted":     inserted,
-			"skipped":      skipped,
-			"skip_details": skipDetails,
-		}, "Bulk inbound selesai", nil, http.StatusOK)
-	}
-}
 
 func InboundManualHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
