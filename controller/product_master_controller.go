@@ -17,17 +17,17 @@ func NewProductMasterController(service services.ProductMasterService) *ProductM
 }
 
 func (ctl *ProductMasterController) ListStagingReguler(c *gin.Context) {
-	masters, err := ctl.service.GetByLocation("staging_reguler")
+	masters, err := ctl.service.GetStagingReguler()
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
-	utils.SendSuccess(c, masters, "List product master staging_reguler", http.StatusOK)
+	utils.SendSuccess(c, masters, "List product master staging_reguler", nil, http.StatusOK)
 }
 
 // ListStagingSticker hanya menampilkan data dengan location = 'staging_sticker'
 func (ctl *ProductMasterController) ListStagingSticker(c *gin.Context) {
-	masters, err := ctl.service.GetByLocation("staging_sticker")
+	masters, err := ctl.service.GetStagingSticker()
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
 		return
