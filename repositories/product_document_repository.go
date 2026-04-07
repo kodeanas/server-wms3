@@ -8,6 +8,8 @@ import (
 
 type ProductDocumentRepository interface {
 	FindAll() ([]models.ProductDocument, error)
+	// Tambahkan baris di bawah ini:
+	FindByType(docType string) ([]models.ProductDocument, error)
 }
 
 type productDocumentRepository struct {
@@ -16,6 +18,13 @@ type productDocumentRepository struct {
 
 func NewProductDocumentRepository(db *gorm.DB) ProductDocumentRepository {
 	return &productDocumentRepository{db: db}
+}
+
+func (r *productDocumentRepository) FindByType(docType string) ([]models.ProductDocument, error) {
+	var documents []models.ProductDocument
+	// Mengambil data berdasarkan type (misal: 'bulk')
+	err := r.db.Where("type = ?", docType).Find(&documents).Error
+	return documents, err
 }
 
 func (r *productDocumentRepository) FindAll() ([]models.ProductDocument, error) {

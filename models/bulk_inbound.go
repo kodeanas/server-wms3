@@ -8,6 +8,7 @@ type BulkInboundMapping struct {
 }
 
 type BulkInboundRequest struct {
+	FileName    string             `json:"file_name"`
 	Supplier    string             `json:"supplier" binding:"required"`
 	TypeProduct string             `json:"type_product" binding:"required,oneof=reguler sticker"`
 	Type        string             `json:"type" binding:"required,oneof=csv xlsx xls"`

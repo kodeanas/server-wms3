@@ -27,10 +27,48 @@ func NewInboundService() InboundService {
 // Proses bulk upload
 func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *gorm.DB) (inserted int, skipped int, skipDetails []string) {
 	skipDetails = []string{}
-	// 1. Simpan dokumen ke tabel ProductDocument (tetap satu kali per upload)
+
+	// --- 1. Tentukan Index Kolom Terlebih Dahulu ---
+	var idxBarcode, idxName, idxCategory, idxQty, idxPrice int
+	if req.TypeProduct == "sticker" {
+		idxBarcode = 0
+		idxName = 1
+		idxQty = 2
+		idxPrice = 3
+		idxCategory = -1
+	} else {
+		idxBarcode = 0
+		idxName = 1
+		idxCategory = 2
+		idxQty = 3
+		idxPrice = 4
+	}
+
+	// --- 2. Kalkulasi Total Item dan Total Price (Sum Only) ---
+	var totalFileItem int
+	var totalFilePrice float64
+
+	for _, row := range req.Rows {
+		// Pastikan row punya kolom yang cukup sebelum diakses
+		if len(row) > idxQty && len(row) > idxPrice {
+			qty, _ := utils.ParseInt(row[idxQty])
+			price, _ := utils.ParseCurrency(row[idxPrice])
+
+			totalFileItem += qty
+			// Sesuai request: Cukup sum kolom price saja
+			totalFilePrice += price
+		}
+	}
+
+	fileName := strings.TrimSpace(req.FileName)
+	if fileName == "" {
+		fileName = "bulk_upload"
+	}
+
+	// --- 3. Simpan dokumen ke tabel ProductDocument ---
 	doc := models.ProductDocument{
 		Code:          fmt.Sprintf("BULK-%d", time.Now().UnixNano()),
-		FileName:      "bulk_upload",
+		FileName:      fileName,
 		Status:        "progress",
 		Type:          "bulk",
 		HeaderBarcode: req.Mapping.BarcodeHeader,
@@ -39,32 +77,16 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 		HeaderPrice:   req.Mapping.PriceHeader,
 		Supplier:      req.Supplier,
 		TypeProduct:   req.TypeProduct,
-		UserID:        nil, // bisa diambil dari context jika ada auth
+		UserID:        nil,
+		FileItem:      totalFileItem,
+		FilePrice:     int(totalFilePrice), // Casting ke int sesuai modelmu
 	}
+
 	if err := db.Create(&doc).Error; err != nil {
 		return 0, 0, []string{fmt.Sprintf("Gagal simpan dokumen: %v", err)}
 	}
 
-	// 2. Hardcode mapping index kolom sesuai urutan excel
-	var idxBarcode, idxName, idxCategory, idxQty, idxPrice int
-	if req.TypeProduct == "sticker" {
-		// Barcode, deskripsi, qty, unit price
-		idxBarcode = 0
-		idxName = 1
-		idxQty = 2
-		idxPrice = 3
-		idxCategory = -1 // tidak ada kolom kategori
-	} else {
-		// barcode, description, category, qty, unit price, bast, discount, price after discount
-		idxBarcode = 0
-		idxName = 1
-		idxCategory = 2
-		idxQty = 3
-		idxPrice = 4
-	}
-	// Tidak perlu validasi mapping, asumsikan urutan selalu benar
-
-	// Ambil semua kategori dan sticker dari DB
+	// --- 4. Ambil referensi master data (Category/Sticker) ---
 	var categories []models.Category
 	var stickers []models.Sticker
 	if req.TypeProduct == "reguler" {
@@ -77,20 +99,21 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 		}
 	}
 
-	// 3. Proses setiap row: paksa tipe produk sesuai pilihan user, validasi, insert jika valid
+	// --- 5. Proses setiap row untuk Insert ke Pending & Master ---
 	for _, row := range req.Rows {
 		if len(row) <= idxPrice || len(row) <= idxQty || len(row) <= idxName || len(row) <= idxBarcode {
 			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: kolom kurang lengkap: %v", row))
 			skipped++
 			continue
 		}
+
 		barcode := row[idxBarcode]
 		name := row[idxName]
 		qtyStr := row[idxQty]
 		priceStr := row[idxPrice]
 
 		qty, err1 := utils.ParseInt(qtyStr)
-		price, err2 := utils.ParseFloat(priceStr)
+		price, err2 := utils.ParseCurrency(priceStr)
 		if err1 != nil || err2 != nil {
 			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: qty/price tidak valid: %v", row))
 			skipped++
@@ -98,23 +121,19 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 		}
 
 		var categoryID, stickerID, location, typeID string
-		categoryID = ""
-		stickerID = ""
-		location = ""
-		typeID = ""
 
 		if req.TypeProduct == "reguler" {
-			// Validasi harga
 			if price < 100000 {
 				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: harga kurang dari 100rb untuk reguler: %v", row))
 				skipped++
 				continue
 			}
-			// Validasi kategori
+
 			kategoriNama := ""
 			if idxCategory != -1 && len(row) > idxCategory {
 				kategoriNama = strings.TrimSpace(row[idxCategory])
 			}
+
 			foundCategory := false
 			for _, cat := range categories {
 				if strings.EqualFold(strings.TrimSpace(cat.Name), kategoriNama) {
@@ -131,13 +150,12 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			location = "staging_reguler"
 			typeID = "categories"
 		} else if req.TypeProduct == "sticker" {
-			// Validasi harga
 			if price >= 100000 {
 				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: harga >= 100rb untuk sticker: %v", row))
 				skipped++
 				continue
 			}
-			// Validasi sticker range
+
 			foundSticker := false
 			for _, sticker := range stickers {
 				if sticker.MinPrice != nil && sticker.MaxPrice != nil && price >= float64(*sticker.MinPrice) && price <= float64(*sticker.MaxPrice) {
@@ -155,17 +173,16 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			typeID = "sticker"
 		}
 
+		// Handling Pointers untuk nullable fields
 		var categoryIDPtr, stickerIDPtr *string
-		if categoryID == "" {
-			categoryIDPtr = nil
-		} else {
+		if categoryID != "" {
 			categoryIDPtr = &categoryID
 		}
-		if stickerID == "" {
-			stickerIDPtr = nil
-		} else {
+		if stickerID != "" {
 			stickerIDPtr = &stickerID
 		}
+
+		// Insert Product Pending
 		pending := models.ProductPending{
 			DocumentID: doc.ID.String(),
 			Barcode:    barcode,
@@ -181,13 +198,9 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			skipped++
 			continue
 		}
+
+		// Insert Product Master
 		productPendingID := pending.ID.String()
-		var productPendingIDPtr *string
-		if productPendingID == "" {
-			productPendingIDPtr = nil
-		} else {
-			productPendingIDPtr = &productPendingID
-		}
 		master := models.ProductMaster{
 			DocumentID:       doc.ID.String(),
 			Barcode:          barcode,
@@ -200,7 +213,7 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			PriceWarehouse:   0,
 			CategoryID:       categoryIDPtr,
 			StickerID:        stickerIDPtr,
-			ProductPendingID: productPendingIDPtr,
+			ProductPendingID: &productPendingID,
 			Location:         location,
 			TypeID:           typeID,
 			TypeOut:          "cargo",
@@ -212,6 +225,7 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 		}
 		inserted++
 	}
+
 	return inserted, skipped, skipDetails
 }
 

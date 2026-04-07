@@ -7,6 +7,8 @@ import (
 
 type ProductDocumentService interface {
 	ListDocuments() ([]models.ProductDocument, error)
+	// Tambahkan ini
+	GetBulkDocuments() ([]models.ProductDocument, error)
 }
 
 type productDocumentService struct {
@@ -19,4 +21,9 @@ func NewProductDocumentService(repo repositories.ProductDocumentRepository) Prod
 
 func (s *productDocumentService) ListDocuments() ([]models.ProductDocument, error) {
 	return s.repo.FindAll()
+}
+
+// Implementasi filter bulk
+func (s *productDocumentService) GetBulkDocuments() ([]models.ProductDocument, error) {
+	return s.repo.FindByType("bulk")
 }
