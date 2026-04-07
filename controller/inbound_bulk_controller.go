@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var inboundBulkService = services.NewInboundService()
+var inboundBulkService = services.NewInboundBulkService()
 
 // Handler untuk upload dan proses bulk sekaligus (single step)
 func InboundBulkUploadHandler(db *gorm.DB) gin.HandlerFunc {
