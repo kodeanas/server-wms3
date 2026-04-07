@@ -9,6 +9,7 @@ type ProductDocumentService interface {
 	ListDocuments() ([]models.ProductDocument, error)
 	// Tambahkan ini
 	GetBulkDocuments() ([]models.ProductDocument, error)
+	GetBulkDocumentDetail(id string) (models.ProductDocument, error)
 }
 
 type productDocumentService struct {
@@ -26,4 +27,8 @@ func (s *productDocumentService) ListDocuments() ([]models.ProductDocument, erro
 // Implementasi filter bulk
 func (s *productDocumentService) GetBulkDocuments() ([]models.ProductDocument, error) {
 	return s.repo.FindByType("bulk")
+}
+
+func (s *productDocumentService) GetBulkDocumentDetail(id string) (models.ProductDocument, error) {
+	return s.repo.FindBulkDetailByID(id)
 }

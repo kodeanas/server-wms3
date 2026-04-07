@@ -49,13 +49,11 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 	var totalFilePrice float64
 
 	for _, row := range req.Rows {
-		// Pastikan row punya kolom yang cukup sebelum diakses
 		if len(row) > idxQty && len(row) > idxPrice {
 			qty, _ := utils.ParseInt(row[idxQty])
 			price, _ := utils.ParseCurrency(row[idxPrice])
 
 			totalFileItem += qty
-			// Sesuai request: Cukup sum kolom price saja
 			totalFilePrice += price
 		}
 	}
@@ -79,7 +77,7 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 		TypeProduct:   req.TypeProduct,
 		UserID:        nil,
 		FileItem:      totalFileItem,
-		FilePrice:     int(totalFilePrice), // Casting ke int sesuai modelmu
+		FilePrice:     int(totalFilePrice),
 	}
 
 	if err := db.Create(&doc).Error; err != nil {
@@ -101,7 +99,7 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 
 	// --- 5. Proses setiap row untuk Insert ke Pending & Master ---
 	for _, row := range req.Rows {
-		if len(row) <= idxPrice || len(row) <= idxQty || len(row) <= idxName || len(row) <= idxBarcode {
+		if len(row) <= idxPrice || len(row) <= idxQty || len(row) <= idxName || (req.TypeProduct != "sticker" && len(row) <= idxCategory) {
 			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: kolom kurang lengkap: %v", row))
 			skipped++
 			continue
@@ -121,6 +119,7 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 		}
 
 		var categoryID, stickerID, location, typeID string
+		var priceWarehouse float64
 
 		if req.TypeProduct == "reguler" {
 			if price < 100000 {
@@ -129,26 +128,33 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 				continue
 			}
 
-			kategoriNama := ""
-			if idxCategory != -1 && len(row) > idxCategory {
-				kategoriNama = strings.TrimSpace(row[idxCategory])
-			}
-
+			kategoriNama := strings.TrimSpace(row[idxCategory])
 			foundCategory := false
 			for _, cat := range categories {
 				if strings.EqualFold(strings.TrimSpace(cat.Name), kategoriNama) {
 					foundCategory = true
 					categoryID = cat.ID.String()
+
+					// Perbaikan: Handling *int ke float64
+					discountVal := 0.0
+					if cat.Discount != nil {
+						discountVal = float64(*cat.Discount)
+					}
+
+					discountFactor := discountVal / 100.0
+					priceWarehouse = price * (1.0 - discountFactor)
 					break
 				}
 			}
+
 			if !foundCategory || categoryID == "" {
-				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: kategori tidak ditemukan di DB: '%s' (row: %v)", kategoriNama, row))
+				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: kategori tidak ditemukan: '%s'", kategoriNama))
 				skipped++
 				continue
 			}
 			location = "staging_reguler"
 			typeID = "categories"
+
 		} else if req.TypeProduct == "sticker" {
 			if price >= 100000 {
 				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: harga >= 100rb untuk sticker: %v", row))
@@ -157,15 +163,20 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			}
 
 			foundSticker := false
-			for _, sticker := range stickers {
-				if sticker.MinPrice != nil && sticker.MaxPrice != nil && price >= float64(*sticker.MinPrice) && price <= float64(*sticker.MaxPrice) {
-					stickerID = sticker.ID.String()
+			for _, s := range stickers {
+				if s.MinPrice != nil && s.MaxPrice != nil && price >= float64(*s.MinPrice) && price <= float64(*s.MaxPrice) {
+					stickerID = s.ID.String()
 					foundSticker = true
+
+					if s.FixedPrice != nil {
+						priceWarehouse = float64(*s.FixedPrice)
+					}
 					break
 				}
 			}
+
 			if !foundSticker || stickerID == "" {
-				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: tidak ada sticker dengan range harga sesuai: %v", row))
+				skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: range harga sticker tidak cocok: %v", row))
 				skipped++
 				continue
 			}
@@ -173,7 +184,7 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			typeID = "sticker"
 		}
 
-		// Handling Pointers untuk nullable fields
+		// Handling Pointers
 		var categoryIDPtr, stickerIDPtr *string
 		if categoryID != "" {
 			categoryIDPtr = &categoryID
@@ -194,7 +205,7 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			Note:       "",
 		}
 		if err := db.Create(&pending).Error; err != nil {
-			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_pending: %v", row))
+			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert pending: %v", err))
 			skipped++
 			continue
 		}
@@ -208,9 +219,9 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			Name:             name,
 			NameWarehouse:    name,
 			Item:             qty,
-			ItemWarehouse:    0,
+			ItemWarehouse:    qty,
 			Price:            price,
-			PriceWarehouse:   0,
+			PriceWarehouse:   priceWarehouse, // Perbaikan: Langsung gunakan float64 (jangan di-cast ke int)
 			CategoryID:       categoryIDPtr,
 			StickerID:        stickerIDPtr,
 			ProductPendingID: &productPendingID,
@@ -219,7 +230,7 @@ func (s *inboundService) InboundBulkProcess(req models.BulkInboundRequest, db *g
 			TypeOut:          "cargo",
 		}
 		if err := db.Create(&master).Error; err != nil {
-			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_master: %v | DB error: %v", row, err))
+			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert master: %v", err))
 			skipped++
 			continue
 		}

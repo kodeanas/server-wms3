@@ -1,11 +1,13 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"wms/services"
 	"wms/utils"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type ProductDocumentController struct {
@@ -36,4 +38,19 @@ func (ctl *ProductDocumentController) GetBulkDocuments(c *gin.Context) {
 	}
 
 	utils.SendSuccess(c, docs, "List bulk product documents", nil, http.StatusOK)
+}
+
+func (ctl *ProductDocumentController) GetBulkDocumentDetail(c *gin.Context) {
+	id := c.Param("id")
+	doc, err := ctl.service.GetBulkDocumentDetail(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			utils.SendError(c, http.StatusNotFound, "Bulk document tidak ditemukan")
+			return
+		}
+		utils.SendError(c, 500, "Gagal mengambil detail bulk document: "+err.Error())
+		return
+	}
+
+	utils.SendSuccess(c, doc, "Detail bulk product document", nil, http.StatusOK)
 }

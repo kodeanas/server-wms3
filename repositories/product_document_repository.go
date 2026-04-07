@@ -10,6 +10,7 @@ type ProductDocumentRepository interface {
 	FindAll() ([]models.ProductDocument, error)
 	// Tambahkan baris di bawah ini:
 	FindByType(docType string) ([]models.ProductDocument, error)
+	FindBulkDetailByID(id string) (models.ProductDocument, error)
 }
 
 type productDocumentRepository struct {
@@ -31,4 +32,12 @@ func (r *productDocumentRepository) FindAll() ([]models.ProductDocument, error) 
 	var docs []models.ProductDocument
 	err := r.db.Order("created_at DESC").Find(&docs).Error
 	return docs, err
+}
+
+func (r *productDocumentRepository) FindBulkDetailByID(id string) (models.ProductDocument, error) {
+	var doc models.ProductDocument
+	err := r.db.Preload("ProductPendings").
+		Where("id = ? AND type = ?", id, "bulk").
+		First(&doc).Error
+	return doc, err
 }
