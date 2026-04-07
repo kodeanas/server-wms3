@@ -3,10 +3,8 @@ package services
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 	"wms/models"
-	"wms/utils"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,8 +12,6 @@ import (
 
 type InboundService interface {
 	InboundManual(req models.InboundRequest, db *gorm.DB) (pending models.ProductPending, master models.ProductMaster, err error)
-	// Bulk
-	InboundBulkProcess(req models.BulkInboundRequest, db *gorm.DB) (inserted int, skipped int, skipDetails []string)
 }
 
 type inboundService struct{}
@@ -372,12 +368,13 @@ func getOrCreateManualDocument(db *gorm.DB) (models.ProductDocument, error) {
 	var doc models.ProductDocument
 	err := db.Where("code = ?", "INBOUND_MANUAL").First(&doc).Error
 	if err == gorm.ErrRecordNotFound {
+		tp := "reguler"
 		doc = models.ProductDocument{
 			Code:        "INBOUND_MANUAL",
 			FileName:    "INBOUND_MANUAL",
 			Type:        "manual",
 			Status:      "progress",
-			TypeProduct: "reguler",
+			TypeProduct: &tp,
 		}
 		if err := db.Create(&doc).Error; err != nil {
 			return doc, err

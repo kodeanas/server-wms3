@@ -70,12 +70,12 @@ func SetupRoutes(r *gin.Engine) {
 		api.DELETE("/classes/:id", classController.DeleteClass)
 
 		// Inbound Manual
-		api.POST("/scanin/manual", controller.InboundManualHandler(config.DB))
-		// api.GET("/scanin/manual", controller.ListAllProductMastersHandler(config.DB))
-		api.GET("/scanin/manual", controller.ListProductManualHandler(config.DB))
+		api.GET("/inbound/list-masters", controller.ListAllProductMastersHandler(config.DB))
+		api.GET("/inbound/list-pendings", controller.ListAllProductPendingsHandler(config.DB))
 
-		// Inbound Bulk (single API)
+		api.POST("/inbound/manual", controller.InboundManualHandler(config.DB))
 		api.POST("/inbound/bulk-upload", controller.InboundBulkUploadHandler(config.DB))
+		api.POST("/inbound/bast-upload", controller.InboundBastUploadHandler(config.DB))
 
 		// Product Master Staging Reguler
 		api.GET("/product-masters/staging-reguler", productMasterController.ListStagingReguler)
