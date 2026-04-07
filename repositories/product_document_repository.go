@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"time"
 	"wms/models"
 
 	"gorm.io/gorm"
@@ -11,6 +12,8 @@ type ProductDocumentRepository interface {
 	// Tambahkan baris di bawah ini:
 	FindByType(docType string) ([]models.ProductDocument, error)
 	FindBulkDetailByID(id string) (models.ProductDocument, error)
+	// UpdateDateStopByID mengisi field date_stop pada dokumen
+	UpdateDateStopByID(id string, dateStop *time.Time) error
 }
 
 type productDocumentRepository struct {
@@ -40,4 +43,9 @@ func (r *productDocumentRepository) FindBulkDetailByID(id string) (models.Produc
 		Where("id = ? AND type = ?", id, "bulk").
 		First(&doc).Error
 	return doc, err
+}
+
+// UpdateDateStopByID mengisi field date_stop pada dokumen
+func (r *productDocumentRepository) UpdateDateStopByID(id string, dateStop *time.Time) error {
+	return r.db.Model(&models.ProductDocument{}).Where("id = ?", id).Update("date_stop", dateStop).Error
 }

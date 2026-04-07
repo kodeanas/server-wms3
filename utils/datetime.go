@@ -23,6 +23,11 @@ func NowUnixNano() int64 {
 	return time.Now().UnixNano()
 }
 
+// Now returns current time.Time
+func Now() time.Time {
+	return time.Now()
+}
+
 // StartOfDay returns start-of-day for specified time.
 func StartOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
