@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS product_pendings (
     item INT,
     price DECIMAL(15,2),
     is_sku BOOLEAN DEFAULT false,
-    status VARCHAR(50) CHECK (status IN ('good', 'damaged', 'abnormal', 'non')),
+    status VARCHAR(50) CHECK (status IN ('discrepancy' ,'good', 'damaged', 'abnormal', 'non')),
     note TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

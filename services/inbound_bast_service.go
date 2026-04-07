@@ -94,7 +94,7 @@ func (s *inboundBastService) ProcessBastUpload(
 			Note:       "",
 		}
 		if err := db.Create(&pending).Error; err != nil {
-			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_pending: %v", row))
+			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_pending: %v | DB error: %v", row, err))
 			skipped++
 			continue
 		}

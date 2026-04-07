@@ -16,12 +16,23 @@ import (
 
 func ListAllProductMastersHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var masters []models.ProductPending
+		var masters []models.ProductMaster
 		if err := db.Order("created_at DESC").Find(&masters).Error; err != nil {
 			utils.SendError(c, 500, err.Error())
 			return
 		}
 		utils.SendSuccess(c, masters, "List master data", nil, http.StatusOK)
+	}
+}
+
+func ListAllProductPendingsHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var pendings []models.ProductPending
+		if err := db.Order("created_at DESC").Find(&pendings).Error; err != nil {
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+		utils.SendSuccess(c, pendings, "List pending data", nil, http.StatusOK)
 	}
 }
 

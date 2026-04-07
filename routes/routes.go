@@ -70,7 +70,8 @@ func SetupRoutes(r *gin.Engine) {
 		api.DELETE("/classes/:id", classController.DeleteClass)
 
 		// Inbound Manual
-		api.GET("/inbound/list", controller.ListAllProductMastersHandler(config.DB))
+		api.GET("/inbound/list-masters", controller.ListAllProductMastersHandler(config.DB))
+		api.GET("/inbound/list-pendings", controller.ListAllProductPendingsHandler(config.DB))
 
 		api.POST("/inbound/manual", controller.InboundManualHandler(config.DB))
 		api.POST("/inbound/bulk-upload", controller.InboundBulkUploadHandler(config.DB))
