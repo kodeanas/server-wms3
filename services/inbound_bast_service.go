@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"mime/multipart"
 	"strings"
+	"time"
+
+	response "wms/dto/response"
 	"wms/models"
 	"wms/repositories"
 	"wms/utils"
@@ -24,12 +27,31 @@ type InboundBastService interface {
 	GetDocumentByID(documentID string, db *gorm.DB) (*models.ProductDocument, error)
 	GetPendingProductByBarcode(documentID, barcode string, db *gorm.DB) (*models.ProductPending, error)
 	ScanAndMoveSinglePendingToMaster(documentID, barcode string, categoryIDInput *string, statusInput string, db *gorm.DB) (bool, string, error)
+	GetInboundBastSummary(db *gorm.DB, date *time.Time, dateStart *time.Time, dateEnd *time.Time) (response.InboundBastSummaryResponse, error)
 }
 
 type inboundBastService struct{}
 
 func NewInboundBastService() InboundBastService {
 	return &inboundBastService{}
+}
+
+func (s *inboundBastService) GetInboundBastSummary(db *gorm.DB, date *time.Time, dateStart *time.Time, dateEnd *time.Time) (response.InboundBastSummaryResponse, error) {
+	filter := repositories.InboundBastSummaryFilter{
+		Date:      date,
+		DateStart: dateStart,
+		DateEnd:   dateEnd,
+	}
+	result, err := repositories.GetInboundBastSummary(db, filter)
+	if err != nil {
+		return response.InboundBastSummaryResponse{}, err
+	}
+	return response.InboundBastSummaryResponse{
+		TotalFileUpload:       result.TotalFileUpload,
+		TotalFileMasihProses:  result.TotalFileMasihProses,
+		TotalItemTerScan:      result.TotalItemTerScan,
+		TotalHargaAsalTerscan: result.TotalHargaAsalTerscan,
+	}, nil
 }
 
 func (s *inboundBastService) ProcessBastUpload(

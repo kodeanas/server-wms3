@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"time"
 	"wms/repositories"
 	"wms/services"
 	"wms/utils"
@@ -11,6 +12,44 @@ import (
 )
 
 var inboundBastService = services.NewInboundBastService()
+
+// Endpoint summary inbound BAST
+func InboundBastSummaryHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Ambil query param: date, date_start, date_end
+		dateStr := c.Query("date")
+		dateStartStr := c.Query("date_start")
+		dateEndStr := c.Query("date_end")
+
+		var date, dateStart, dateEnd *time.Time
+		layout := "2006-01-02"
+		if dateStr != "" {
+			d, err := time.Parse(layout, dateStr)
+			if err == nil {
+				date = &d
+			}
+		}
+		if dateStartStr != "" {
+			ds, err := time.Parse(layout, dateStartStr)
+			if err == nil {
+				dateStart = &ds
+			}
+		}
+		if dateEndStr != "" {
+			de, err := time.Parse(layout, dateEndStr)
+			if err == nil {
+				dateEnd = &de
+			}
+		}
+
+		result, err := inboundBastService.GetInboundBastSummary(db, date, dateStart, dateEnd)
+		if err != nil {
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+		utils.SendSuccess(c, result, "OK", nil, http.StatusOK)
+	}
+}
 
 // Handler untuk upload dan proses inbound BAST
 func InboundBastUploadHandler(db *gorm.DB) gin.HandlerFunc {

@@ -77,11 +77,12 @@ func SetupRoutes(r *gin.Engine) {
 		api.POST("/inbound/bulk-upload", controller.InboundBulkUploadHandler(config.DB))
 		api.POST("/inbound/bast-upload", controller.InboundBastUploadHandler(config.DB))
 
-		// Inbound BAST Scanner (split)
+		// Inbound BAST
+		api.GET("/inbound/bast-summary", controller.InboundBastSummaryHandler(config.DB))
+
 		api.GET("/inbound/bast-scanner/document/:document_id", controller.InboundBastGetDocumentHandler(config.DB))
 		api.GET("/inbound/bast-scanner/:document_id/product/:barcode", controller.InboundBastGetPendingProductHandler(config.DB))
 		api.POST("/inbound/bast-scanner/:document_id/scan/:barcode", controller.InboundBastScanSingleProductHandler(config.DB))
-
 		api.POST("/inbound/bast-scanner/:document_id/finish", productDocumentController.FinishDocument)
 
 		// Product Master Staging Reguler
