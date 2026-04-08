@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS product_documents (
     user_id UUID,
     supplier VARCHAR(255),
     type_product VARCHAR(50) CHECK (type_product IN ('reguler', 'sticker', 'refurbish')),
+    date_stop TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS product_pendings (
     is_sku BOOLEAN DEFAULT false,
     status VARCHAR(50) CHECK (status IN ('discrepancy' ,'good', 'damaged', 'abnormal', 'non')),
     note TEXT,
+    date_scanned TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,

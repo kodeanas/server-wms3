@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"wms/repositories"
 	"wms/services"
 	"wms/utils"
 
@@ -44,5 +45,76 @@ func InboundBastUploadHandler(db *gorm.DB) gin.HandlerFunc {
 			"skip_details": skipDetails,
 			"filename":     header.Filename,
 		}, "Inbound BAST selesai", nil, http.StatusOK)
+	}
+}
+
+// 1. Endpoint untuk masuk ke halaman scanner (ambil dokumen by id)
+func InboundBastGetDocumentHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		documentID := c.Param("document_id")
+		doc, err := inboundBastService.GetDocumentByID(documentID, db)
+		if err != nil {
+			utils.SendError(c, 404, err.Error())
+			return
+		}
+		// Hitung jumlah scanned dan unscanned
+		pendingRepo := repositories.NewProductPendingRepository(db)
+		pendings, err := pendingRepo.FindByDocumentID(documentID)
+		if err != nil {
+			utils.SendError(c, 500, "Gagal mengambil data product pending")
+			return
+		}
+		scanned := 0
+		unscanned := 0
+		for _, p := range pendings {
+			if p.DateScanned != nil {
+				scanned++
+			} else {
+				unscanned++
+			}
+		}
+		utils.SendSuccess(c, gin.H{
+			"document":        doc,
+			"scanned_count":   scanned,
+			"unscanned_count": unscanned,
+		}, "OK", nil, http.StatusOK)
+	}
+}
+
+// 2. Endpoint untuk ambil product pending by barcode (scanner)
+func InboundBastGetPendingProductHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		documentID := c.Param("document_id")
+		barcode := c.Param("barcode")
+		product, err := inboundBastService.GetPendingProductByBarcode(documentID, barcode, db)
+		if err != nil {
+			utils.SendError(c, 404, err.Error())
+			return
+		}
+		utils.SendSuccess(c, product, "OK", nil, http.StatusOK)
+	}
+}
+
+// 3. Endpoint untuk post hasil scan (migrasi 1 produk)
+func InboundBastScanSingleProductHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		documentID := c.Param("document_id")
+		barcode := c.Param("barcode")
+
+		var req struct {
+			CategoryID *string `json:"category_id"` // wajib untuk reguler
+			Status     string  `json:"status"`      // good, abnormal, damaged, non
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			utils.SendError(c, 400, "Invalid request body")
+			return
+		}
+
+		success, msg, err := inboundBastService.ScanAndMoveSinglePendingToMaster(documentID, barcode, req.CategoryID, req.Status, db)
+		if err != nil {
+			utils.SendError(c, 400, msg+": "+err.Error())
+			return
+		}
+		utils.SendSuccess(c, gin.H{"success": success, "message": msg}, "OK", nil, http.StatusOK)
 	}
 }
