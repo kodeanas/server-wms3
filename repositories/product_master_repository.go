@@ -13,6 +13,7 @@ type ProductMasterRepository interface {
 	FindStagingReguler() ([]dto.ProductMasterRegulerResponse, error)
 	FindStagingSticker() ([]dto.ProductMasterStickerResponse, error)
 	FindByDocumentAndDateRange(documentCode string, from, to time.Time) ([]models.ProductMaster, error)
+	Create(master *models.ProductMaster) error
 }
 
 type productMasterRepository struct {
@@ -27,6 +28,10 @@ func (r *productMasterRepository) FindByLocation(location string) ([]models.Prod
 	var masters []models.ProductMaster
 	err := r.db.Where("location = ?", location).Order("created_at DESC").Find(&masters).Error
 	return masters, err
+}
+
+func (r *productMasterRepository) Create(master *models.ProductMaster) error {
+	return r.db.Create(master).Error
 }
 
 func (r *productMasterRepository) FindStagingReguler() ([]dto.ProductMasterRegulerResponse, error) {

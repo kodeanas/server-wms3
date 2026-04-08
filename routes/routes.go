@@ -19,6 +19,11 @@ func SetupRoutes(r *gin.Engine) {
 	classRepo := repositories.NewClassRepository(config.DB)
 	productMasterRepo := repositories.NewProductMasterRepository(config.DB)
 	productDocumentRepo := repositories.NewProductDocumentRepository(config.DB)
+	productPendingRepo := repositories.NewProductPendingRepository(config.DB)
+	productRepairRepo := repositories.NewProductRepairRepository(config.DB)
+	// TODO: Tambahkan repository product_pending dan product_repair jika sudah ada
+	// productPendingRepo := repositories.NewProductPendingRepository(config.DB)
+	// productRepairRepo := repositories.NewProductRepairRepository(config.DB)
 
 	// Services
 	categoryService := services.NewCategoryService(categoryRepo)
@@ -28,6 +33,8 @@ func SetupRoutes(r *gin.Engine) {
 	productMasterService := services.NewProductMasterService(productMasterRepo)
 	productDocumentService := services.NewProductDocumentService(productDocumentRepo)
 	productMasterSummaryService := services.NewProductMasterSummaryService(productMasterRepo)
+	// Inbound SKU Service
+	inboundSKUService := services.NewInboundSKUService(productDocumentRepo, productPendingRepo, productRepairRepo, productMasterRepo)
 
 	// Controllers
 	categoryController := controller.NewCategoryController(categoryService)
@@ -37,6 +44,7 @@ func SetupRoutes(r *gin.Engine) {
 	productMasterController := controller.NewProductMasterController(productMasterService)
 	productDocumentController := controller.NewProductDocumentController(productDocumentService)
 	productMasterSummaryController := controller.NewProductMasterSummaryController(productMasterSummaryService)
+	inboundSKUController := controller.NewInboundSKUController(inboundSKUService)
 
 	// Public API
 	api := r.Group("/api")
@@ -100,5 +108,10 @@ func SetupRoutes(r *gin.Engine) {
 
 		// Product Master Summary
 		api.GET("/manual/summary", productMasterSummaryController.GetSummary)
+
+		// Inbound SKU
+		api.POST("/inbound-sku/upload", inboundSKUController.UploadExcel)
+		api.POST("/inbound-sku/crosscheck/:pending_id", inboundSKUController.CrosscheckPending)
+		api.POST("/inbound-sku/finish/:document_id", inboundSKUController.FinishInboundSKU)
 	}
 }

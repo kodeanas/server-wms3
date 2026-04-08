@@ -9,6 +9,7 @@ import (
 
 type ProductDocumentRepository interface {
 	FindAll() ([]models.ProductDocument, error)
+	Create(doc *models.ProductDocument) error
 	// Tambahkan baris di bawah ini:
 	FindByType(docType string) ([]models.ProductDocument, error)
 	FindBulkDetailByID(id string) (models.ProductDocument, error)
@@ -23,6 +24,7 @@ type ProductDocumentRepository interface {
 	// UpdateStatusByID mengubah status dokumen
 	UpdateStatusByID(id string, status string) error
 }
+
 // UpdateStatusByID mengubah status dokumen
 func (r *productDocumentRepository) UpdateStatusByID(id string, status string) error {
 	return r.db.Model(&models.ProductDocument{}).Where("id = ?", id).Update("status", status).Error
@@ -34,6 +36,10 @@ type productDocumentRepository struct {
 
 func NewProductDocumentRepository(db *gorm.DB) ProductDocumentRepository {
 	return &productDocumentRepository{db: db}
+}
+
+func (r *productDocumentRepository) Create(doc *models.ProductDocument) error {
+	return r.db.Create(doc).Error
 }
 
 func (r *productDocumentRepository) FindByType(docType string) ([]models.ProductDocument, error) {
