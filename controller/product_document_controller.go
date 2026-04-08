@@ -65,3 +65,44 @@ func (ctl *ProductDocumentController) GetBastDocuments(c *gin.Context) {
 
 	utils.SendSuccess(c, docs, "List bast product documents", nil, http.StatusOK)
 }
+
+func (ctl *ProductDocumentController) GetBastRelationsDetail(c *gin.Context) {
+	id := c.Param("id")
+	data, err := ctl.service.GetBastRelationsDetail(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			utils.SendError(c, http.StatusNotFound, "Bast document tidak ditemukan")
+			return
+		}
+		utils.SendError(c, 500, "Gagal mengambil relasi bast document: "+err.Error())
+		return
+	}
+
+	utils.SendSuccess(c, data, "Detail relasi bast product document", nil, http.StatusOK)
+}
+
+func (ctl *ProductDocumentController) GetBastOverview(c *gin.Context) {
+	id := c.Param("id")
+	overview, err := ctl.service.GetBastOverview(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			utils.SendError(c, http.StatusNotFound, "Bast document tidak ditemukan")
+			return
+		}
+		utils.SendError(c, 500, "Gagal mengambil overview bast document: "+err.Error())
+		return
+	}
+
+	utils.SendSuccess(c, overview, "Overview bast product document", nil, http.StatusOK)
+}
+
+func (ctl *ProductDocumentController) GetBastPendingByType(c *gin.Context) {
+	id := c.Param("id")
+	grouped, err := ctl.service.GetBastPendingsByType(id)
+	if err != nil {
+		utils.SendError(c, 500, "Gagal mengambil pending bast by type: "+err.Error())
+		return
+	}
+
+	utils.SendSuccess(c, grouped, "Pending bast by type", nil, http.StatusOK)
+}

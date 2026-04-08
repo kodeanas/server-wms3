@@ -1,4 +1,4 @@
-﻿package models
+package models
 
 import (
 	"time"
@@ -22,6 +22,7 @@ type ProductDocument struct {
 	UserID          *string          `gorm:"type:char(36)" json:"user_id"`
 	Supplier        string           `gorm:"size:255" json:"supplier"`
 	TypeProduct     *string          `gorm:"size:50" json:"type_product"`
+	ProductMasters  []ProductMaster  `gorm:"foreignKey:DocumentID;references:ID" json:"product_masters,omitempty"`
 	ProductPendings []ProductPending `gorm:"foreignKey:DocumentID;references:ID" json:"product_pendings,omitempty"`
 	CreatedAt       time.Time        `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt       time.Time        `gorm:"autoUpdateTime" json:"updated_at"`
