@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS product_masters (
     bundle_parent_id UUID,
     date_out TIMESTAMP,
     type_out VARCHAR(50) CHECK (
-        type_out IN ('regular_sales', 'cargo', 'scrap', 'qcd', 'transfer')
+        type_out IN ('regular_sales', 'cargo', 'scrap', 'qcd', 'transfer') OR type_out IS NULL
     ),
     rack_staging_id UUID,
     rack_display_id UUID,

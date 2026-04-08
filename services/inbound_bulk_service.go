@@ -214,7 +214,7 @@ func (s *inboundBulkService) InboundBulkProcess(req models.BulkInboundRequest, d
 			ProductPendingID: &productPendingID,
 			Location:         location,
 			TypeID:           typeID,
-			TypeOut:          "cargo",
+			TypeOut:          nil,
 		}
 		if err := db.Create(&master).Error; err != nil {
 			skipDetails = append(skipDetails, fmt.Sprintf("Row skipped: gagal insert product_master: %v | DB error: %v", row, err))

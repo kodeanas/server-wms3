@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	"math"
+	"time"
 	"wms/models"
 	"wms/repositories"
 )
@@ -16,6 +17,7 @@ type ProductDocumentService interface {
 	GetBastRelationsDetail(id string) (map[string]interface{}, error)
 	GetBastOverview(id string) (map[string]interface{}, error)
 	GetBastPendingsByType(id string) (map[string]interface{}, error)
+	FinishDocument(id string) error
 }
 
 type productDocumentService struct {
@@ -28,6 +30,15 @@ func NewProductDocumentService(repo repositories.ProductDocumentRepository) Prod
 
 func (s *productDocumentService) ListDocuments() ([]models.ProductDocument, error) {
 	return s.repo.FindAll()
+}
+
+func (s *productDocumentService) FinishDocument(id string) error {
+	now := time.Now()
+	err := s.repo.UpdateDateStopByID(id, &now)
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdateStatusByID(id, "done")
 }
 
 // Implementasi filter bulk
