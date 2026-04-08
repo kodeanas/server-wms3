@@ -90,6 +90,7 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/product-documents", productDocumentController.ListDocuments)
 		api.GET("/product-documents/bulk", productDocumentController.GetBulkDocuments)
 		api.GET("/product-documents/bulk/:id", productDocumentController.GetBulkDocumentDetail)
+		api.GET("/product-documents/bast", productDocumentController.GetBastDocuments)
 
 		// Product Master Summary
 		api.GET("/manual/summary", productMasterSummaryController.GetSummary)

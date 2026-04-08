@@ -54,3 +54,14 @@ func (ctl *ProductDocumentController) GetBulkDocumentDetail(c *gin.Context) {
 
 	utils.SendSuccess(c, doc, "Detail bulk product document", nil, http.StatusOK)
 }
+
+// Implementasi filter bast
+func (ctl *ProductDocumentController) GetBastDocuments(c *gin.Context) {
+	docs, err := ctl.service.GetBastDocuments()
+	if err != nil {
+		utils.SendError(c, 500, "Gagal mengambil data bast: "+err.Error())
+		return
+	}
+
+	utils.SendSuccess(c, docs, "List bast product documents", nil, http.StatusOK)
+}
