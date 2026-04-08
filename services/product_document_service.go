@@ -1,6 +1,7 @@
 package services
 
 import (
+	"time"
 	"wms/models"
 	"wms/repositories"
 )
@@ -11,6 +12,7 @@ type ProductDocumentService interface {
 	GetBulkDocumentDetail(id string) (models.ProductDocument, error)
 
 	GetBastDocuments() ([]models.ProductDocument, error)
+	FinishDocument(id string) error
 }
 
 type productDocumentService struct {
@@ -23,6 +25,15 @@ func NewProductDocumentService(repo repositories.ProductDocumentRepository) Prod
 
 func (s *productDocumentService) ListDocuments() ([]models.ProductDocument, error) {
 	return s.repo.FindAll()
+}
+
+func (s *productDocumentService) FinishDocument(id string) error {
+	now := time.Now()
+	err := s.repo.UpdateDateStopByID(id, &now)
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdateStatusByID(id, "done")
 }
 
 // Implementasi filter bulk

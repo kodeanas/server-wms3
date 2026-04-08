@@ -124,7 +124,7 @@ func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (
 		CategoryID:       categoryID,
 		StickerID:        stickerID,
 		TypeID:           typeID,
-		TypeOut:          "cargo",
+		TypeOut:          nil,
 	}
 
 	// lokasi beda tergantung type

@@ -82,6 +82,8 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/inbound/bast-scanner/:document_id/product/:barcode", controller.InboundBastGetPendingProductHandler(config.DB))
 		api.POST("/inbound/bast-scanner/:document_id/scan/:barcode", controller.InboundBastScanSingleProductHandler(config.DB))
 
+		api.POST("/inbound/bast-scanner/:document_id/finish", productDocumentController.FinishDocument)
+
 		// Product Master Staging Reguler
 		api.GET("/product-masters/staging-reguler", productMasterController.ListStagingReguler)
 		api.GET("/product-masters/staging-sticker", productMasterController.ListStagingSticker)

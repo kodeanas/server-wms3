@@ -14,6 +14,12 @@ type ProductDocumentRepository interface {
 	FindBulkDetailByID(id string) (models.ProductDocument, error)
 	// UpdateDateStopByID mengisi field date_stop pada dokumen
 	UpdateDateStopByID(id string, dateStop *time.Time) error
+	// UpdateStatusByID mengubah status dokumen
+	UpdateStatusByID(id string, status string) error
+}
+// UpdateStatusByID mengubah status dokumen
+func (r *productDocumentRepository) UpdateStatusByID(id string, status string) error {
+	return r.db.Model(&models.ProductDocument{}).Where("id = ?", id).Update("status", status).Error
 }
 
 type productDocumentRepository struct {

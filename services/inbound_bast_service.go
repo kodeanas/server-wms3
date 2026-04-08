@@ -166,6 +166,25 @@ func (s *inboundBastService) GetPendingProductByBarcode(documentID, barcode stri
 // ScanAndMoveSinglePendingToMaster migrasi satu product pending ke master
 // Sekarang menerima categoryID dan status dari user
 func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcode string, categoryIDInput *string, statusInput string, db *gorm.DB) (bool, string, error) {
+	// Cek dokumen sudah di-finish/lock
+	docRepo := repositories.NewProductDocumentRepository(db)
+	docs, err := docRepo.FindAll()
+	if err != nil {
+		return false, "Gagal mengambil dokumen", err
+	}
+	var doc *models.ProductDocument
+	for _, d := range docs {
+		if d.ID.String() == documentID {
+			doc = &d
+			break
+		}
+	}
+	if doc == nil {
+		return false, "Dokumen tidak ditemukan", nil
+	}
+	if doc.DateStop != nil || doc.Status == "done" {
+		return false, "Dokumen sudah di-finish/lock, tidak bisa scan lagi", nil
+	}
 	pendingRepo := repositories.NewProductPendingRepository(db)
 	stickerRepo := repositories.NewStickerRepository(db)
 
@@ -173,7 +192,7 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 	if err != nil {
 		return false, "Product pending tidak ditemukan", err
 	}
-	if p.Status == "migrated" {
+	if p.Status == "good" {
 		return false, "Product sudah dipindahkan", nil
 	}
 
@@ -186,7 +205,11 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 			return false, "CategoryID wajib diisi untuk produk reguler", nil
 		}
 		categoryID = categoryIDInput
-		priceWarehouse = p.Price
+		var category models.Category
+		if err := db.Where("id = ?", *categoryID).First(&category).Error; err == nil && category.Discount != nil {
+			discount := float64(*category.Discount)
+			priceWarehouse = p.Price * (1 - discount/100)
+		}
 	} else if p.Price < 100000 {
 		// Sticker: cari sticker berdasarkan range harga
 		stickers, err := stickerRepo.List()
@@ -212,6 +235,15 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 		return false, "Tidak memenuhi syarat reguler/sticker", nil
 	}
 
+	var location string
+	if categoryID != nil {
+		location = "staging_reguler"
+	} else if stickerID != nil {
+		location = "staging_sticker"
+	} else {
+		location = ""
+	}
+
 	master := models.ProductMaster{
 		DocumentID:       p.DocumentID,
 		Barcode:          p.Barcode,
@@ -223,6 +255,8 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 		StickerID:        stickerID,
 		ProductPendingID: func() *string { id := p.ID.String(); return &id }(),
 		IsSKU:            p.IsSKU,
+		Location:         location,
+		TypeOut:          nil,
 	}
 	if err := db.Create(&master).Error; err != nil {
 		return false, "Gagal insert ke master", err

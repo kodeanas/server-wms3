@@ -65,3 +65,14 @@ func (ctl *ProductDocumentController) GetBastDocuments(c *gin.Context) {
 
 	utils.SendSuccess(c, docs, "List bast product documents", nil, http.StatusOK)
 }
+
+// Finish/lock dokumen BAST (isi date_stop)
+func (ctl *ProductDocumentController) FinishDocument(c *gin.Context) {
+	id := c.Param("document_id")
+	err := ctl.service.FinishDocument(id)
+	if err != nil {
+		utils.SendError(c, 500, "Gagal finish dokumen: "+err.Error())
+		return
+	}
+	utils.SendSuccess(c, nil, "Dokumen berhasil di-finish/lock", nil, http.StatusOK)
+}
