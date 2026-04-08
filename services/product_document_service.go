@@ -7,9 +7,10 @@ import (
 
 type ProductDocumentService interface {
 	ListDocuments() ([]models.ProductDocument, error)
-	// Tambahkan ini
 	GetBulkDocuments() ([]models.ProductDocument, error)
 	GetBulkDocumentDetail(id string) (models.ProductDocument, error)
+
+	GetBastDocuments() ([]models.ProductDocument, error)
 }
 
 type productDocumentService struct {
@@ -31,4 +32,9 @@ func (s *productDocumentService) GetBulkDocuments() ([]models.ProductDocument, e
 
 func (s *productDocumentService) GetBulkDocumentDetail(id string) (models.ProductDocument, error) {
 	return s.repo.FindBulkDetailByID(id)
+}
+
+// Implementasi filter bast
+func (s *productDocumentService) GetBastDocuments() ([]models.ProductDocument, error) {
+	return s.repo.FindByType("bast")
 }
