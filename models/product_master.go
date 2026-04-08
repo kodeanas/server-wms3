@@ -26,7 +26,7 @@ type ProductMaster struct {
 	Location         string         `gorm:"size:50" json:"location"`
 	BundleParentID   *string        `gorm:"type:char(36)" json:"bundle_parent_id"`
 	DateOut          *time.Time     `json:"date_out"`
-	TypeOut          string         `gorm:"size:50" json:"type_out"`
+	TypeOut          *string        `gorm:"size:50" json:"type_out"`
 	RackStagingID    *string        `gorm:"type:char(36)" json:"rack_staging_id"`
 	RackDisplayID    *string        `gorm:"type:char(36)" json:"rack_display_id"`
 	BagID            *string        `gorm:"type:char(36)" json:"bag_id"`
