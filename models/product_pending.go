@@ -13,6 +13,8 @@ type ProductPending struct {
 	Barcode     string         `gorm:"size:255" json:"barcode"`
 	Name        string         `gorm:"type:text" json:"name"`
 	Item        int            `json:"item"`
+	ItemGood    int            `json:"item_good"`
+	ItemDamaged int            `json:"item_damaged"`
 	Price       float64        `gorm:"type:decimal(15,2)" json:"price"`
 	IsSKU       bool           `gorm:"default:false" json:"is_sku"`
 	Status      string         `gorm:"size:50" json:"status"`

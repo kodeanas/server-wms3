@@ -154,7 +154,7 @@ func InboundBastScanSingleProductHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		success, msg, code, err := inboundBastService.ScanAndMoveSinglePendingToMaster(documentID, barcode, req.CategoryID, req.Status, req.Note, db)
+		success, msg, barcodeWarehouse, code, err := inboundBastService.ScanAndMoveSinglePendingToMaster(documentID, barcode, req.CategoryID, req.Status, req.Note, db)
 		if err != nil || !success {
 			if code == 0 {
 				code = 400
@@ -168,6 +168,11 @@ func InboundBastScanSingleProductHandler(db *gorm.DB) gin.HandlerFunc {
 			}())
 			return
 		}
-		utils.SendSuccess(c, gin.H{"success": success, "message": msg}, "OK", nil, http.StatusOK)
+		utils.SendSuccess(c, gin.H{
+			"message":           msg,
+			"barcode_warehouse": barcodeWarehouse,
+		}, "OK", nil, http.StatusOK)
 	}
 }
+
+// 4. Endpoint untuk ambil list dokumen BAST

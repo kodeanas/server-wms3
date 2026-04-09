@@ -1,3 +1,8 @@
+// Tambahkan import jika belum
+// import "wms/controller"
+// Daftarkan endpoint baru untuk list dokumen SKU
+// Misal, jika sudah ada skuController:
+// router.GET("/inbound/sku-documents", skuController.ListSKUProductDocuments)
 package routes
 
 import (
@@ -105,6 +110,7 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/product-documents/bast/:id/relations", productDocumentController.GetBastRelationsDetail)
 		api.GET("/product-documents/bast/:id/overview", productDocumentController.GetBastOverview)
 		api.GET("/product-documents/bast/:id/pending-by-type", productDocumentController.GetBastPendingByType)
+		api.GET("/product-documents/sku", inboundSKUController.ListSKUProductDocuments)
 
 		// Product Master Summary
 		api.GET("/manual/summary", productMasterSummaryController.GetSummary)
@@ -113,5 +119,6 @@ func SetupRoutes(r *gin.Engine) {
 		api.POST("/inbound-sku/upload", inboundSKUController.UploadExcel)
 		api.POST("/inbound-sku/crosscheck/:pending_id", inboundSKUController.CrosscheckPending)
 		api.POST("/inbound-sku/finish/:document_id", inboundSKUController.FinishInboundSKU)
+		api.GET("/inbound-sku/document/:document_id", controller.InboundSKUGetDocumentHandler(config.DB))
 	}
 }

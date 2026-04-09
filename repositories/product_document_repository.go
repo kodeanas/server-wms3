@@ -19,9 +19,9 @@ type ProductDocumentRepository interface {
 	FindBastProductPendingByNonDiscrepancy(id string) ([]models.ProductPending, error)
 	FindBastScannedSummary(id string) (totalItemScanned int64, totalPriceScanned float64, err error)
 	FindBastPendingSummaryByStatuses(id string, statuses []string) (map[string]map[string]float64, error)
-	// UpdateDateStopByID mengisi field date_stop pada dokumen
+	FindSkuDetailByID(id string) (models.ProductDocument, error)
 	UpdateDateStopByID(id string, dateStop *time.Time) error
-	// UpdateStatusByID mengubah status dokumen
+	FindBastDetailByID(id string) (models.ProductDocument, error)
 	UpdateStatusByID(id string, status string) error
 }
 
@@ -55,6 +55,21 @@ func (r *productDocumentRepository) FindAll() ([]models.ProductDocument, error) 
 	return docs, err
 }
 
+func (r *productDocumentRepository) FindSkuDetailByID(id string) (models.ProductDocument, error) {
+	var doc models.ProductDocument
+	err := r.db.Preload("ProductPendings").
+		Where("id = ? AND type = ?", id, "sku").
+		First(&doc).Error
+	return doc, err
+}
+
+func (r *productDocumentRepository) FindBastDetailByID(id string) (models.ProductDocument, error) {
+	var doc models.ProductDocument
+	err := r.db.Preload("ProductPendings").
+		Where("id = ? AND type = ?", id, "bast").
+		First(&doc).Error
+	return doc, err
+}
 func (r *productDocumentRepository) FindBulkDetailByID(id string) (models.ProductDocument, error) {
 	var doc models.ProductDocument
 	err := r.db.Preload("ProductPendings").

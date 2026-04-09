@@ -117,3 +117,12 @@ func (ctl *ProductDocumentController) FinishDocument(c *gin.Context) {
 	}
 	utils.SendSuccess(c, nil, "Dokumen berhasil di-finish/lock", nil, http.StatusOK)
 }
+
+func (c *InboundSKUController) ListSKUProductDocuments(ctx *gin.Context) {
+	docs, err := c.Service.ListSKUProductDocuments()
+	if err != nil {
+		utils.SendError(ctx, 500, err.Error())
+		return
+	}
+	utils.SendSuccess(ctx, docs, "List SKU product documents", nil, http.StatusOK)
+}
