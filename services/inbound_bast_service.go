@@ -26,7 +26,7 @@ type InboundBastService interface {
 	// ScanAndMovePendingToMaster(documentID string, db *gorm.DB) (migrated, skipped int, details []string, err error) // dihapus
 	GetDocumentByID(documentID string, db *gorm.DB) (*models.ProductDocument, error)
 	GetPendingProductByBarcode(documentID, barcode string, db *gorm.DB) (*models.ProductPending, error)
-	ScanAndMoveSinglePendingToMaster(documentID, barcode string, categoryIDInput *string, statusInput string, db *gorm.DB) (bool, string, error)
+	ScanAndMoveSinglePendingToMaster(documentID, barcode string, categoryIDInput *string, statusInput string, note string, db *gorm.DB) (bool, string, int, error)
 	GetInboundBastSummary(db *gorm.DB, date *time.Time, dateStart *time.Time, dateEnd *time.Time) (response.InboundBastSummaryResponse, error)
 }
 
@@ -187,12 +187,12 @@ func (s *inboundBastService) GetPendingProductByBarcode(documentID, barcode stri
 
 // ScanAndMoveSinglePendingToMaster migrasi satu product pending ke master
 // Sekarang menerima categoryID dan status dari user
-func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcode string, categoryIDInput *string, statusInput string, db *gorm.DB) (bool, string, error) {
+func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcode string, categoryIDInput *string, statusInput string, note string, db *gorm.DB) (bool, string, int, error) {
 	// Cek dokumen sudah di-finish/lock
 	docRepo := repositories.NewProductDocumentRepository(db)
 	docs, err := docRepo.FindAll()
 	if err != nil {
-		return false, "Gagal mengambil dokumen", err
+		return false, "Gagal mengambil dokumen", 500, err
 	}
 	var doc *models.ProductDocument
 	for _, d := range docs {
@@ -202,20 +202,20 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 		}
 	}
 	if doc == nil {
-		return false, "Dokumen tidak ditemukan", nil
+		return false, "Dokumen tidak ditemukan", 404, nil
 	}
 	if doc.DateStop != nil || doc.Status == "done" {
-		return false, "Dokumen sudah di-finish/lock, tidak bisa scan lagi", nil
+		return false, "Dokumen sudah di-finish/lock, tidak bisa scan lagi", 409, nil
 	}
 	pendingRepo := repositories.NewProductPendingRepository(db)
 	stickerRepo := repositories.NewStickerRepository(db)
 
 	p, err := pendingRepo.FindByDocumentIDAndBarcode(documentID, barcode)
 	if err != nil {
-		return false, "Product pending tidak ditemukan", err
+		return false, "Product pending tidak ditemukan", 404, err
 	}
 	if p.Status == "good" {
-		return false, "Product sudah dipindahkan", nil
+		return false, "Product sudah dipindahkan", 409, nil
 	}
 
 	var priceWarehouse float64
@@ -224,7 +224,7 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 	if p.Price >= 100000 {
 		// Reguler: categoryID wajib dari input user
 		if categoryIDInput == nil {
-			return false, "CategoryID wajib diisi untuk produk reguler", nil
+			return false, "CategoryID wajib diisi untuk produk reguler", 400, nil
 		}
 		categoryID = categoryIDInput
 		var category models.Category
@@ -236,7 +236,7 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 		// Sticker: cari sticker berdasarkan range harga
 		stickers, err := stickerRepo.List()
 		if err != nil {
-			return false, "Gagal mengambil data sticker", err
+			return false, "Gagal mengambil data sticker", 500, err
 		}
 		foundSticker := false
 		var sticker *models.Sticker
@@ -248,13 +248,13 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 			}
 		}
 		if !foundSticker || sticker == nil || sticker.FixedPrice == nil {
-			return false, "Sticker/fixed_price tidak ditemukan untuk harga ini", nil
+			return false, "Sticker/fixed_price tidak ditemukan untuk harga ini", 404, nil
 		}
 		id := sticker.ID.String()
 		stickerID = &id
 		priceWarehouse = float64(*sticker.FixedPrice)
 	} else {
-		return false, "Tidak memenuhi syarat reguler/sticker", nil
+		return false, "Tidak memenuhi syarat reguler/sticker", 400, nil
 	}
 
 	var location string
@@ -281,14 +281,19 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 		TypeOut:          nil,
 	}
 	if err := db.Create(&master).Error; err != nil {
-		return false, "Gagal insert ke master", err
+		return false, "Gagal insert ke master", 500, err
 	}
 
 	p.Status = statusInput
+	if statusInput != "good" {
+		p.Note = note
+	} else {
+		p.Note = ""
+	}
 	now := utils.Now()
 	p.DateScanned = &now
 	if err := pendingRepo.Update(p); err != nil {
-		return true, "Berhasil migrasi, tapi gagal update status pending", err
+		return true, "Berhasil migrasi, tapi gagal update status pending", 500, err
 	}
-	return true, "Berhasil migrasi", nil
+	return true, "Berhasil migrasi", 200, nil
 }
