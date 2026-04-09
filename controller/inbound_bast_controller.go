@@ -130,6 +130,10 @@ func InboundBastGetPendingProductHandler(db *gorm.DB) gin.HandlerFunc {
 			utils.SendError(c, 404, err.Error())
 			return
 		}
+		if product.Status == "good" {
+			utils.SendError(c, 409, "Produk sudah di-scan dan tidak dapat diakses lagi.")
+			return
+		}
 		utils.SendSuccess(c, product, "OK", nil, http.StatusOK)
 	}
 }
@@ -143,15 +147,25 @@ func InboundBastScanSingleProductHandler(db *gorm.DB) gin.HandlerFunc {
 		var req struct {
 			CategoryID *string `json:"category_id"` // wajib untuk reguler
 			Status     string  `json:"status"`      // good, abnormal, damaged, non
+			Note       string  `json:"note"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			utils.SendError(c, 400, "Invalid request body")
 			return
 		}
 
-		success, msg, err := inboundBastService.ScanAndMoveSinglePendingToMaster(documentID, barcode, req.CategoryID, req.Status, db)
-		if err != nil {
-			utils.SendError(c, 400, msg+": "+err.Error())
+		success, msg, code, err := inboundBastService.ScanAndMoveSinglePendingToMaster(documentID, barcode, req.CategoryID, req.Status, req.Note, db)
+		if err != nil || !success {
+			if code == 0 {
+				code = 400
+			}
+			utils.SendError(c, code, msg+func() string {
+				if err != nil {
+					return ": " + err.Error()
+				} else {
+					return ""
+				}
+			}())
 			return
 		}
 		utils.SendSuccess(c, gin.H{"success": success, "message": msg}, "OK", nil, http.StatusOK)
