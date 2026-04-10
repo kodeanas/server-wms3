@@ -188,7 +188,7 @@ func InboundBastScanSingleProductHandler(db *gorm.DB) gin.HandlerFunc {
 
 		utils.SendSuccess(c, gin.H{
 			"message":         "Berhasil migrasi",
-			"barcode":         master.Barcode,
+			"barcode":         master.BarcodeWarehouse,
 			"price":           master.Price,
 			"price_warehouse": master.PriceWarehouse,
 			"name":            master.Name,
