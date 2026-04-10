@@ -26,6 +26,7 @@ func SetupRoutes(r *gin.Engine) {
 	productDocumentRepo := repositories.NewProductDocumentRepository(config.DB)
 	productPendingRepo := repositories.NewProductPendingRepository(config.DB)
 	productRepairRepo := repositories.NewProductRepairRepository(config.DB)
+	rackDisplayRepo := repositories.NewRackDisplayRepository(config.DB)
 	// TODO: Tambahkan repository product_pending dan product_repair jika sudah ada
 	// productPendingRepo := repositories.NewProductPendingRepository(config.DB)
 	// productRepairRepo := repositories.NewProductRepairRepository(config.DB)
@@ -40,6 +41,7 @@ func SetupRoutes(r *gin.Engine) {
 	productMasterSummaryService := services.NewProductMasterSummaryService(productMasterRepo)
 	// Inbound SKU Service
 	inboundSKUService := services.NewInboundSKUService(productDocumentRepo, productPendingRepo, productRepairRepo, productMasterRepo)
+	rackDisplayService := services.NewRackDisplayService(rackDisplayRepo)
 
 	// Controllers
 	categoryController := controller.NewCategoryController(categoryService)
@@ -50,10 +52,18 @@ func SetupRoutes(r *gin.Engine) {
 	productDocumentController := controller.NewProductDocumentController(productDocumentService)
 	productMasterSummaryController := controller.NewProductMasterSummaryController(productMasterSummaryService)
 	inboundSKUController := controller.NewInboundSKUController(inboundSKUService)
+	rackDisplayController := controller.NewRackDisplayController(rackDisplayService)
 
 	// Public API
 	api := r.Group("/api")
 	{
+		// Rack Displays
+		api.POST("/rack-displays", rackDisplayController.Create)
+		api.GET("/rack-displays", rackDisplayController.GetAll)
+		api.GET("/rack-displays/:id", rackDisplayController.GetByID)
+		api.PUT("/rack-displays/:id", rackDisplayController.Update)
+		api.DELETE("/rack-displays/:id", rackDisplayController.Delete)
+
 		// Categories
 		api.POST("/categories", categoryController.CreateCategory)
 		api.GET("/categories", categoryController.ListCategories)
