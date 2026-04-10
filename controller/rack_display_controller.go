@@ -26,6 +26,9 @@ func (ctl *RackDisplayController) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if rack.Code == "" {
+		rack.Code = utils.GenerateWarehouseBarcode()
+	}
 	if err := ctl.Service.Create(&rack); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
