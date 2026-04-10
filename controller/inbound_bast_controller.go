@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"time"
+	"wms/models"
 	"wms/repositories"
 	"wms/services"
 	"wms/utils"
@@ -168,9 +169,30 @@ func InboundBastScanSingleProductHandler(db *gorm.DB) gin.HandlerFunc {
 			}())
 			return
 		}
+
+		// Ambil data master terbaru setelah migrasi
+		var master models.ProductMaster
+		if err := db.Where("barcode_warehouse = ? AND document_id = ?", barcodeWarehouse, documentID).First(&master).Error; err != nil {
+			utils.SendError(c, 500, "Gagal mengambil data master")
+			return
+		}
+
+		// Ambil nama kategori jika ada
+		var categoryName interface{} = nil
+		if master.CategoryID != nil {
+			var category models.Category
+			if err := db.Where("id = ?", *master.CategoryID).First(&category).Error; err == nil {
+				categoryName = category.Name
+			}
+		}
+
 		utils.SendSuccess(c, gin.H{
-			"message":           msg,
-			"barcode_warehouse": barcodeWarehouse,
+			"message":         "Berhasil migrasi",
+			"barcode":         master.Barcode,
+			"price":           master.Price,
+			"price_warehouse": master.PriceWarehouse,
+			"name":            master.Name,
+			"category_name":   categoryName,
 		}, "OK", nil, http.StatusOK)
 	}
 }
