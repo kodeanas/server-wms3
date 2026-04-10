@@ -5,6 +5,7 @@ import (
 
 	"wms/models"
 	"wms/services"
+	"wms/utils"
 
 	"github.com/gin-gonic/gin"
 
@@ -29,7 +30,7 @@ func (ctl *RackDisplayController) Create(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, rack)
+	utils.SendSuccess(c, rack, "Rack display created successfully", nil, http.StatusCreated)
 }
 
 func (ctl *RackDisplayController) GetAll(c *gin.Context) {
@@ -38,7 +39,7 @@ func (ctl *RackDisplayController) GetAll(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, racks)
+	utils.SendSuccess(c, racks, "Rack displays retrieved successfully", nil, http.StatusOK)
 }
 
 func (ctl *RackDisplayController) GetByID(c *gin.Context) {
@@ -48,7 +49,7 @@ func (ctl *RackDisplayController) GetByID(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, rack)
+	utils.SendSuccess(c, rack, "Rack display retrieved successfully", nil, http.StatusOK)
 }
 
 func (ctl *RackDisplayController) Update(c *gin.Context) {
@@ -64,7 +65,7 @@ func (ctl *RackDisplayController) Update(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, rack)
+	utils.SendSuccess(c, rack, "Rack display updated successfully", nil, http.StatusOK)
 }
 
 func (ctl *RackDisplayController) Delete(c *gin.Context) {
@@ -73,5 +74,5 @@ func (ctl *RackDisplayController) Delete(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+	utils.SendSuccess(c, nil, "Rack display deleted successfully", nil, http.StatusOK)
 }
