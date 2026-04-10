@@ -68,10 +68,6 @@ func InboundSKUGetDocumentHandler(db *gorm.DB) gin.HandlerFunc {
 			utils.SendError(c, 404, "Dokumen tidak ditemukan")
 			return
 		}
-		if doc.Status == "done" {
-			utils.SendError(c, http.StatusForbidden, "Dokumen sudah selesai dan tidak dapat diakses.")
-			return
-		}
 		pendingRepo := repositories.NewProductPendingRepository(db)
 		pendings, err := pendingRepo.FindByDocumentID(documentID)
 		if err != nil {
