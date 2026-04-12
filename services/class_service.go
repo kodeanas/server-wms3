@@ -21,6 +21,8 @@ type CreateClassPayload struct {
 	Disc                int     `json:"disc"`
 	MinTransactionValue float64 `json:"min_transaction_value" binding:"required"`
 	Week                int     `json:"week"`
+	Iteration           int     `json:"iteration"`
+	Status              string  `json:"status"`
 }
 
 type UpdateClassPayload struct {
@@ -29,6 +31,8 @@ type UpdateClassPayload struct {
 	Disc                int     `json:"disc"`
 	MinTransactionValue float64 `json:"min_transaction_value"`
 	Week                int     `json:"week"`
+	Iteration           int     `json:"iteration"`
+	Status              string  `json:"status"`
 }
 
 type classService struct {
@@ -47,6 +51,8 @@ func (s *classService) CreateClass(input CreateClassPayload) (*models.Class, err
 		Disc:                input.Disc,
 		MinTransactionValue: input.MinTransactionValue,
 		Week:                input.Week,
+		Iteration:           input.Iteration,
+		Status:              input.Status,
 	}
 	if err := s.repo.Create(class); err != nil {
 		return nil, err

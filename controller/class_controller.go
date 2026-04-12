@@ -52,6 +52,8 @@ func (ctrl *ClassController) GetClassByID(c *gin.Context) {
 		"disc":                  class.Disc,
 		"min_transaction_value": fmt.Sprintf("%.2f", class.MinTransactionValue),
 		"week":                  class.Week,
+		"iteration":             class.Iteration,
+		"status":                class.Status,
 		"created_at":            class.CreatedAt,
 		"updated_at":            class.UpdatedAt,
 	}
@@ -74,6 +76,8 @@ func (ctrl *ClassController) ListClasses(c *gin.Context) {
 			"disc":                  class.Disc,
 			"min_transaction_value": fmt.Sprintf("%.2f", class.MinTransactionValue),
 			"week":                  class.Week,
+			"iteration":             class.Iteration,
+			"status":                class.Status,
 			"created_at":            class.CreatedAt,
 			"updated_at":            class.UpdatedAt,
 		})
