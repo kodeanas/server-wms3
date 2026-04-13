@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS classes (
     min_transaction_value DECIMAL(15,2),
     week INT,
     iteration INT,
+    status VARCHAR(50) CHECK (status IN ('active', 'inactive')) DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
