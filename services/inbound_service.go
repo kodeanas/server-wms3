@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 	"wms/models"
+	"wms/repositories"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,14 +15,20 @@ type InboundService interface {
 	InboundManual(req models.InboundRequest, db *gorm.DB) (pending models.ProductPending, master models.ProductMaster, err error)
 }
 
-type inboundService struct{}
+type inboundService struct {
+	repo repositories.ProductPendingRepository
+}
 
-func NewInboundService() InboundService {
-	return &inboundService{}
+func NewInboundService(repo repositories.ProductPendingRepository) InboundService {
+	return &inboundService{repo: repo}
 }
 
 func strPtr(s string) *string {
 	return &s
+}
+
+func (s *inboundService) GetManualInboundList() ([]models.ProductPending, error) {
+	return s.repo.FindManualInbound()
 }
 
 func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (models.ProductPending, models.ProductMaster, error) {

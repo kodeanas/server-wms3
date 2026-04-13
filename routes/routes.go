@@ -96,6 +96,7 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/inbound/list-masters", controller.ListAllProductMastersHandler(config.DB))
 		api.GET("/inbound/list-pendings", controller.ListAllProductPendingsHandler(config.DB))
 
+		api.GET("/inbound/manual-pending", controller.ListProductManualHandler(config.DB))
 		api.POST("/inbound/manual", controller.InboundManualHandler(config.DB))
 		api.POST("/inbound/bulk-upload", controller.InboundBulkUploadHandler(config.DB))
 		api.POST("/inbound/bast-upload", controller.InboundBastUploadHandler(config.DB))
