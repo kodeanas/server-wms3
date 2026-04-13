@@ -97,7 +97,7 @@ func ListProductManualHandler(db *gorm.DB) gin.HandlerFunc {
 }
 
 // Tambahkan variabel global untuk service
-var inboundService = services.NewInboundService()
+var inboundService = services.NewInboundService(nil)
 
 func InboundManualHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {

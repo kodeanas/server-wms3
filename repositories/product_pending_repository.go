@@ -12,6 +12,7 @@ type ProductPendingRepository interface {
 	FindByID(id string) (*models.ProductPending, error)
 	Create(product *models.ProductPending) error
 	Update(product *models.ProductPending) error
+	FindManualInbound() ([]models.ProductPending, error)
 }
 
 type productPendingRepository struct {
@@ -52,4 +53,15 @@ func (r *productPendingRepository) FindByDocumentIDAndBarcode(documentID, barcod
 
 func (r *productPendingRepository) Update(product *models.ProductPending) error {
 	return r.db.Save(product).Error
+}
+
+func (r *productPendingRepository) FindManualInbound() ([]models.ProductPending, error) {
+	var products []models.ProductPending
+	err := r.db.Joins("JOIN product_documents ON product_documents.id = product_pendings.document_id").
+		Where("product_documents.type = ? AND product_pendings.deleted_at IS NULL AND product_documents.deleted_at IS NULL", "manual").
+		Find(&products).Error
+	if err != nil {
+		return nil, err
+	}
+	return products, nil
 }

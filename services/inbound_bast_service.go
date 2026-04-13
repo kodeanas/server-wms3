@@ -218,64 +218,67 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 		return false, "Barang sudah di-scan, tidak bisa di-scan ulang", "", 409, nil
 	}
 
-	if statusInput != "good" {
-		p.Status = statusInput
-		p.Note = note
-		now := utils.Now()
-		p.DateScanned = &now
-		if err := pendingRepo.Update(p); err != nil {
-			return false, "Gagal update status pending", "", 500, err
-		}
-		// Jika perlu, insert ke tabel lain (misal ProductRepair) di sini
-		return true, "Berhasil update status", "", 200, nil
-	}
-
+	// Semua status (good, damaged, abnormal, non) akan masuk ke product master
 	var priceWarehouse float64
 	var categoryID, stickerID *string
 
-	if p.Price >= 100000 {
-		// Reguler: categoryID wajib dari input user
-		if categoryIDInput == nil {
-			return false, "CategoryID wajib diisi untuk produk reguler", "", 400, nil
-		}
-		categoryID = categoryIDInput
-		var category models.Category
-		if err := db.Where("id = ?", *categoryID).First(&category).Error; err == nil && category.Discount != nil {
-			discount := float64(*category.Discount)
-			priceWarehouse = p.Price * (1 - discount/100)
-		}
-	} else if p.Price < 100000 {
-		// Sticker: cari sticker berdasarkan range harga
-		stickers, err := stickerRepo.List()
-		if err != nil {
-			return false, "Gagal mengambil data sticker", "", 500, err
-		}
-		foundSticker := false
-		var sticker *models.Sticker
-		for _, s := range stickers {
-			if s.MinPrice != nil && s.MaxPrice != nil && p.Price >= float64(*s.MinPrice) && p.Price <= float64(*s.MaxPrice) {
-				sticker = &s
-				foundSticker = true
-				break
+	if statusInput == "good" {
+		if p.Price >= 100000 {
+			// Reguler: categoryID wajib dari input user
+			if categoryIDInput == nil {
+				return false, "CategoryID wajib diisi untuk produk reguler", "", 400, nil
 			}
+			categoryID = categoryIDInput
+			var category models.Category
+			if err := db.Where("id = ?", *categoryID).First(&category).Error; err == nil && category.Discount != nil {
+				discount := float64(*category.Discount)
+				priceWarehouse = p.Price * (1 - discount/100)
+			} else {
+				priceWarehouse = p.Price
+			}
+		} else if p.Price < 100000 {
+			// Sticker: cari sticker berdasarkan range harga
+			stickers, err := stickerRepo.List()
+			if err != nil {
+				return false, "Gagal mengambil data sticker", "", 500, err
+			}
+			foundSticker := false
+			var sticker *models.Sticker
+			for _, s := range stickers {
+				if s.MinPrice != nil && s.MaxPrice != nil && p.Price >= float64(*s.MinPrice) && p.Price <= float64(*s.MaxPrice) {
+					sticker = &s
+					foundSticker = true
+					break
+				}
+			}
+			if !foundSticker || sticker == nil || sticker.FixedPrice == nil {
+				return false, "Sticker/fixed_price tidak ditemukan untuk harga ini", "", 404, nil
+			}
+			id := sticker.ID.String()
+			stickerID = &id
+			priceWarehouse = float64(*sticker.FixedPrice)
+		} else {
+			return false, "Tidak memenuhi syarat reguler/sticker", "", 400, nil
 		}
-		if !foundSticker || sticker == nil || sticker.FixedPrice == nil {
-			return false, "Sticker/fixed_price tidak ditemukan untuk harga ini", "", 404, nil
-		}
-		id := sticker.ID.String()
-		stickerID = &id
-		priceWarehouse = float64(*sticker.FixedPrice)
 	} else {
-		return false, "Tidak memenuhi syarat reguler/sticker", "", 400, nil
+		// Jika status bukan good, category_id dan sticker_id kosong
+		categoryID = nil
+		stickerID = nil
+		priceWarehouse = p.Price
 	}
 
 	var location string
-	if categoryID != nil {
-		location = "staging_reguler"
-	} else if stickerID != nil {
-		location = "staging_sticker"
-	} else {
-		location = ""
+	switch statusInput {
+	case "damaged", "abnormal", "non":
+		location = statusInput
+	default:
+		if categoryID != nil {
+			location = "staging_reguler"
+		} else if stickerID != nil {
+			location = "staging_sticker"
+		} else {
+			location = ""
+		}
 	}
 
 	master := models.ProductMaster{
@@ -298,12 +301,9 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 		return false, "Gagal insert ke master", "", 500, err
 	}
 
+	// Update status dan note pada pending
 	p.Status = statusInput
-	if statusInput != "good" {
-		p.Note = note
-	} else {
-		p.Note = ""
-	}
+	p.Note = note
 	now := utils.Now()
 	p.DateScanned = &now
 	if err := pendingRepo.Update(p); err != nil {

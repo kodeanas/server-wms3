@@ -118,7 +118,8 @@ CREATE TABLE IF NOT EXISTS product_masters (
     location VARCHAR(50) CHECK (
         location IN (
             'staging_reguler', 'staging_sticker', 'display',
-            'cargo', 'scrap', 'qcd', 'repair', 'staging_sku'
+            'cargo', 'scrap', 'qcd', 'repair', 'staging_sku',
+            'damaged', 'abnormal', 'non'
         )
     ),
     bundle VARCHAR(50) CHECK (bundle IN ('yes', 'no')) DEFAULT 'no',
