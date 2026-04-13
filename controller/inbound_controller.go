@@ -118,18 +118,37 @@ func InboundManualHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		pending, master, err := inboundService.InboundManual(models.InboundRequest{
+		_, master, err := inboundService.InboundManual(models.InboundRequest{
 			Name:       req.Name,
 			Item:       req.Item,
 			Price:      req.Price,
 			CategoryID: req.CategoryID,
 			StickerID:  req.StickerID,
 			Status:     req.Status,
+			Note:       req.Note,
 		}, db)
 		if err != nil {
 			utils.SendError(c, 500, err.Error())
 			return
 		}
-		utils.SendSuccess(c, gin.H{"pending": pending, "master": master}, "Inbound berhasil dibuat", nil, http.StatusOK)
+
+		// Ambil nama kategori jika ada
+		var categoryName interface{} = nil
+		if master.CategoryID != nil {
+			var category models.Category
+			if err := db.Where("id = ?", *master.CategoryID).First(&category).Error; err == nil {
+				categoryName = category.Name
+			}
+		}
+
+		// Response hanya productMaster
+		utils.SendSuccess(c, gin.H{
+			"message":         "Berhasil migrasi",
+			"barcode":         master.BarcodeWarehouse,
+			"price":           master.Price,
+			"price_warehouse": master.PriceWarehouse,
+			"name":            master.Name,
+			"category_name":   categoryName,
+		}, "OK", nil, http.StatusOK)
 	}
 }
