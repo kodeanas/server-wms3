@@ -14,6 +14,8 @@ type ProductMasterRepository interface {
 	FindStagingSticker() ([]dto.ProductMasterStickerResponse, error)
 	FindByDocumentAndDateRange(documentCode string, from, to time.Time) ([]models.ProductMaster, error)
 	Create(master *models.ProductMaster) error
+	FindByBarcodeWarehouse(barcode string) (*models.ProductMaster, error)
+	UpdateRackStagingID(id string, rackStagingID string) error
 }
 
 type productMasterRepository struct {
@@ -102,4 +104,21 @@ func (r *productMasterRepository) FindByDocumentAndDateRange(documentCode string
 		Order("product_masters.created_at DESC").
 		Find(&masters).Error
 	return masters, err
+}
+
+// Find product master by barcode_warehouse
+func (r *productMasterRepository) FindByBarcodeWarehouse(barcode string) (*models.ProductMaster, error) {
+	var master models.ProductMaster
+	err := r.db.Where("barcode_warehouse = ? AND deleted_at IS NULL", barcode).First(&master).Error
+	if err != nil {
+		return nil, err
+	}
+	return &master, nil
+}
+
+// Update rack_staging_id for product master
+func (r *productMasterRepository) UpdateRackStagingID(id string, rackStagingID string) error {
+	return r.db.Model(&models.ProductMaster{}).
+		Where("id = ? AND deleted_at IS NULL", id).
+		Update("rack_staging_id", rackStagingID).Error
 }
