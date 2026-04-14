@@ -101,6 +101,7 @@ func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (
 	// =========================
 	// INSERT PENDING
 	// =========================
+
 	pending := models.ProductPending{
 		ID:         uuid.New(),
 		DocumentID: doc.ID.String(),
@@ -109,6 +110,11 @@ func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (
 		Item:       req.Item,
 		Price:      req.Price,
 		Status:     req.Status,
+	}
+
+	// Jika status selain good, isi note jika ada
+	if req.Status != "good" && req.Note != nil {
+		pending.Note = *req.Note
 	}
 
 	if err := db.Create(&pending).Error; err != nil {
@@ -134,11 +140,18 @@ func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (
 		TypeOut:          nil,
 	}
 
-	// lokasi beda tergantung type
-	if typeID == "categories" {
-		master.Location = "staging_reguler"
-	} else {
-		master.Location = "staging_sticker"
+	// lokasi tergantung status
+	switch req.Status {
+	case "damaged":
+		master.Location = "damaged"
+	case "abnormal":
+		master.Location = "abnormal"
+	default:
+		if typeID == "categories" {
+			master.Location = "staging_reguler"
+		} else {
+			master.Location = "staging_sticker"
+		}
 	}
 
 	if err := db.Create(&master).Error; err != nil {

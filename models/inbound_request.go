@@ -7,4 +7,5 @@ type InboundRequest struct {
 	CategoryID *string `json:"category_id,omitempty"`
 	StickerID  *string `json:"sticker_id,omitempty"`
 	Status     string  `json:"status" binding:"required,oneof=good abnormal damaged non"`
+	Note       *string `json:"note,omitempty"`
 }
