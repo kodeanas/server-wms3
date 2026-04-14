@@ -27,6 +27,7 @@ func SetupRoutes(r *gin.Engine) {
 	productPendingRepo := repositories.NewProductPendingRepository(config.DB)
 	productRepairRepo := repositories.NewProductRepairRepository(config.DB)
 	rackDisplayRepo := repositories.NewRackDisplayRepository(config.DB)
+	rackStagingRepo := repositories.NewRackStagingRepository(config.DB)
 	// TODO: Tambahkan repository product_pending dan product_repair jika sudah ada
 	// productPendingRepo := repositories.NewProductPendingRepository(config.DB)
 	// productRepairRepo := repositories.NewProductRepairRepository(config.DB)
@@ -42,6 +43,7 @@ func SetupRoutes(r *gin.Engine) {
 	// Inbound SKU Service
 	inboundSKUService := services.NewInboundSKUService(productDocumentRepo, productPendingRepo, productRepairRepo, productMasterRepo)
 	rackDisplayService := services.NewRackDisplayService(rackDisplayRepo)
+	rackStagingService := services.NewRackStagingService(rackStagingRepo, rackDisplayRepo)
 
 	// Controllers
 	categoryController := controller.NewCategoryController(categoryService)
@@ -53,6 +55,7 @@ func SetupRoutes(r *gin.Engine) {
 	productMasterSummaryController := controller.NewProductMasterSummaryController(productMasterSummaryService)
 	inboundSKUController := controller.NewInboundSKUController(inboundSKUService)
 	rackDisplayController := controller.NewRackDisplayController(rackDisplayService)
+	rackStagingController := controller.NewRackStagingController(rackStagingService)
 
 	// Public API
 	api := r.Group("/api")
@@ -63,6 +66,11 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/rack-displays/:id", rackDisplayController.GetByID)
 		api.PUT("/rack-displays/:id", rackDisplayController.Update)
 		api.DELETE("/rack-displays/:id", rackDisplayController.Delete)
+
+		// Rack Stagings
+		api.GET("/rack-stagings/:id", rackStagingController.GetDetail)
+		api.POST("/rack-stagings", rackStagingController.Create)
+		api.POST("/rack-stagings/:rackStagingID/scanner/scan-barcode", productMasterController.ScanBarcodeWarehouse)
 
 		// Categories
 		api.POST("/categories", categoryController.CreateCategory)
