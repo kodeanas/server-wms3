@@ -68,9 +68,12 @@ func SetupRoutes(r *gin.Engine) {
 		api.DELETE("/rack-displays/:id", rackDisplayController.Delete)
 
 		// Rack Stagings
-		api.GET("/rack-stagings/:id", rackStagingController.GetDetail)
+		api.GET("/rack-stagings", rackStagingController.ListAll)
+		api.GET("/rack-stagings/:rackStagingID", rackStagingController.GetDetail)
 		api.POST("/rack-stagings", rackStagingController.Create)
+		api.GET("/rack-stagings/:rackStagingID/products", productMasterController.ListByRackStagingID)
 		api.POST("/rack-stagings/:rackStagingID/scanner/scan-barcode", productMasterController.ScanBarcodeWarehouse)
+		api.POST("/rack-stagings/:rackStagingID/finish", rackStagingController.Finish)
 
 		// Categories
 		api.POST("/categories", categoryController.CreateCategory)
