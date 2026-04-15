@@ -17,7 +17,6 @@ import (
 // SetupRoutes menginisialisasi semua endpoint pada router yang diberikan.
 // ini di-set di sini karena akan semakin banyak resource.
 func SetupRoutes(r *gin.Engine) {
-
 	// Repositories
 	categoryRepo := repositories.NewCategoryRepository(config.DB)
 	stickerRepo := repositories.NewStickerRepository(config.DB)
@@ -47,6 +46,7 @@ func SetupRoutes(r *gin.Engine) {
 	rackDisplayService := services.NewRackDisplayService(rackDisplayRepo)
 	rackStagingService := services.NewRackStagingService(rackStagingRepo, rackDisplayRepo)
 	rackStagingStickerService := services.NewRackStagingStickerService(bagRepo, productMasterRepo)
+	wholesaleBagService := services.NewWholesaleBagService(bagRepo, productMasterRepo)
 
 	// Controllers
 	categoryController := controller.NewCategoryController(categoryService)
@@ -60,6 +60,7 @@ func SetupRoutes(r *gin.Engine) {
 	rackDisplayController := controller.NewRackDisplayController(rackDisplayService)
 	rackStagingController := controller.NewRackStagingController(rackStagingService)
 	rackStagingStickerController := controller.NewRackStagingStickerController(rackStagingStickerService)
+	wholesaleBagController := controller.NewWholesaleBagController(wholesaleBagService)
 
 	// Public API
 	api := r.Group("/api")
@@ -86,6 +87,14 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/rack-stagings-sticker/:id", rackStagingStickerController.GetDetail)
 		api.GET("/rack-stagings-sticker/:id/products", rackStagingStickerController.ListByBagID)
 		api.POST("/rack-stagings-sticker/:id/scanner/scan-barcode", rackStagingStickerController.ScanBarcodeWarehouse)
+
+		// Wholesale Bag
+		api.POST("/wholesale-bags", wholesaleBagController.Create)
+		api.GET("/wholesale-bags", wholesaleBagController.List)
+		api.GET("/wholesale-bags/:bagID", wholesaleBagController.GetDetail)
+		api.GET("/wholesale-bags/:bagID/products", wholesaleBagController.ListByBagID)
+		api.GET("/wholesale-bags/:bagID/detail", wholesaleBagController.GetDetail)
+		api.POST("/wholesale-bags/:bagID/scanner/scan-barcode", wholesaleBagController.ScanBarcodeWarehouse)
 
 		// Categories
 		api.POST("/categories", categoryController.CreateCategory)
