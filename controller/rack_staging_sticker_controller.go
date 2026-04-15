@@ -9,10 +9,10 @@ import (
 )
 
 type RackStagingStickerController struct {
-	service services.BagService
+	service services.RackStagingStickerService
 }
 
-func NewRackStagingStickerController(service services.BagService) *RackStagingStickerController {
+func NewRackStagingStickerController(service services.RackStagingStickerService) *RackStagingStickerController {
 	return &RackStagingStickerController{service: service}
 }
 

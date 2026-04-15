@@ -46,7 +46,7 @@ func SetupRoutes(r *gin.Engine) {
 	inboundSKUService := services.NewInboundSKUService(productDocumentRepo, productPendingRepo, productRepairRepo, productMasterRepo)
 	rackDisplayService := services.NewRackDisplayService(rackDisplayRepo)
 	rackStagingService := services.NewRackStagingService(rackStagingRepo, rackDisplayRepo)
-	bagService := services.NewBagService(bagRepo, productMasterRepo)
+	rackStagingStickerService := services.NewRackStagingStickerService(bagRepo, productMasterRepo)
 
 	// Controllers
 	categoryController := controller.NewCategoryController(categoryService)
@@ -59,7 +59,7 @@ func SetupRoutes(r *gin.Engine) {
 	inboundSKUController := controller.NewInboundSKUController(inboundSKUService)
 	rackDisplayController := controller.NewRackDisplayController(rackDisplayService)
 	rackStagingController := controller.NewRackStagingController(rackStagingService)
-	rackStagingStickerController := controller.NewRackStagingStickerController(bagService)
+	rackStagingStickerController := controller.NewRackStagingStickerController(rackStagingStickerService)
 
 	// Public API
 	api := r.Group("/api")

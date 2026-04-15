@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type BagService interface {
+type RackStagingStickerService interface {
 	CreateStickerBag(userID string) (*models.Bag, error)
 	GetBagByID(id string) (*models.Bag, error)
 	ListBags() ([]models.Bag, error)
@@ -20,24 +20,24 @@ type BagService interface {
 	GetBagDetail(bagID string) (*dto.RackStagingDetailResponse, error)
 }
 
-func (s *bagService) ListProductsByBagID(bagID string) ([]models.ProductMaster, error) {
+func (s *rackStagingStickerService) ListProductsByBagID(bagID string) ([]models.ProductMaster, error) {
 	return s.productMasterRepo.FindByBagID(bagID)
 }
 
-type bagService struct {
+type rackStagingStickerService struct {
 	repo              repositories.BagRepository
 	productMasterRepo repositories.ProductMasterRepository
 }
 
-func NewBagService(repo repositories.BagRepository, productMasterRepo repositories.ProductMasterRepository) BagService {
-	return &bagService{repo: repo, productMasterRepo: productMasterRepo}
+func NewRackStagingStickerService(repo repositories.BagRepository, productMasterRepo repositories.ProductMasterRepository) RackStagingStickerService {
+	return &rackStagingStickerService{repo: repo, productMasterRepo: productMasterRepo}
 }
 
 func generateBagCode() string {
 	return fmt.Sprintf("BAG-%d", time.Now().UnixNano())
 }
 
-func (s *bagService) CreateStickerBag(userID string) (*models.Bag, error) {
+func (s *rackStagingStickerService) CreateStickerBag(userID string) (*models.Bag, error) {
 	var uidPtr *uuid.UUID
 	if userID != "" {
 		uid, err := uuid.Parse(userID)
@@ -61,23 +61,23 @@ func (s *bagService) CreateStickerBag(userID string) (*models.Bag, error) {
 	return bag, nil
 }
 
-func (s *bagService) GetBagByID(id string) (*models.Bag, error) {
+func (s *rackStagingStickerService) GetBagByID(id string) (*models.Bag, error) {
 	return s.repo.FindByID(id)
 }
 
-func (s *bagService) ListBags() ([]models.Bag, error) {
+func (s *rackStagingStickerService) ListBags() ([]models.Bag, error) {
 	return s.repo.FindAll()
 }
 
-func (s *bagService) GetProductByBarcodeWarehouse(barcode string) (*models.ProductMaster, error) {
+func (s *rackStagingStickerService) GetProductByBarcodeWarehouse(barcode string) (*models.ProductMaster, error) {
 	return s.productMasterRepo.FindByBarcodeWarehouse(barcode)
 }
 
-func (s *bagService) SetBag(productID string, bagID string) error {
+func (s *rackStagingStickerService) SetBag(productID string, bagID string) error {
 	return s.productMasterRepo.UpdateBagID(productID, bagID)
 }
 
-func (s *bagService) GetBagDetail(bagID string) (*dto.RackStagingDetailResponse, error) {
+func (s *rackStagingStickerService) GetBagDetail(bagID string) (*dto.RackStagingDetailResponse, error) {
 	bag, err := s.repo.FindByID(bagID)
 	if err != nil {
 		return nil, err
