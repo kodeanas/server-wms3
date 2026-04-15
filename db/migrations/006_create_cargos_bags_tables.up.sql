@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS bags (
     code VARCHAR(255) NOT NULL,
     type VARCHAR(50) CHECK (type IN ('sticker', 'regular', 'qcd', 'scrap', 'bkl')),
     user_id UUID,  -- Ubah dari CHAR(36) ke UUID
-    lock_status VARCHAR(50) CHECK (lock_status IN ('open', 'lock', 'out')),
+    is_moved BOOLEAN DEFAULT false,
     date_out DATE,
     cargo_id UUID,  -- Ubah dari CHAR(36) ke UUID
     transfer_store_id UUID,  -- Ubah dari CHAR(36) ke UUID

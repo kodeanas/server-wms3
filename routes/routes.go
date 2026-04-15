@@ -17,6 +17,7 @@ import (
 // SetupRoutes menginisialisasi semua endpoint pada router yang diberikan.
 // ini di-set di sini karena akan semakin banyak resource.
 func SetupRoutes(r *gin.Engine) {
+
 	// Repositories
 	categoryRepo := repositories.NewCategoryRepository(config.DB)
 	stickerRepo := repositories.NewStickerRepository(config.DB)
@@ -28,6 +29,7 @@ func SetupRoutes(r *gin.Engine) {
 	productRepairRepo := repositories.NewProductRepairRepository(config.DB)
 	rackDisplayRepo := repositories.NewRackDisplayRepository(config.DB)
 	rackStagingRepo := repositories.NewRackStagingRepository(config.DB)
+	bagRepo := repositories.NewBagRepository(config.DB)
 	// TODO: Tambahkan repository product_pending dan product_repair jika sudah ada
 	// productPendingRepo := repositories.NewProductPendingRepository(config.DB)
 	// productRepairRepo := repositories.NewProductRepairRepository(config.DB)
@@ -44,6 +46,7 @@ func SetupRoutes(r *gin.Engine) {
 	inboundSKUService := services.NewInboundSKUService(productDocumentRepo, productPendingRepo, productRepairRepo, productMasterRepo)
 	rackDisplayService := services.NewRackDisplayService(rackDisplayRepo)
 	rackStagingService := services.NewRackStagingService(rackStagingRepo, rackDisplayRepo)
+	bagService := services.NewBagService(bagRepo, productMasterRepo)
 
 	// Controllers
 	categoryController := controller.NewCategoryController(categoryService)
@@ -56,10 +59,12 @@ func SetupRoutes(r *gin.Engine) {
 	inboundSKUController := controller.NewInboundSKUController(inboundSKUService)
 	rackDisplayController := controller.NewRackDisplayController(rackDisplayService)
 	rackStagingController := controller.NewRackStagingController(rackStagingService)
+	rackStagingStickerController := controller.NewRackStagingStickerController(bagService)
 
 	// Public API
 	api := r.Group("/api")
 	{
+
 		// Rack Displays
 		api.POST("/rack-displays", rackDisplayController.Create)
 		api.GET("/rack-displays", rackDisplayController.GetAll)
@@ -74,6 +79,13 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/rack-stagings/:rackStagingID/products", productMasterController.ListByRackStagingID)
 		api.POST("/rack-stagings/:rackStagingID/scanner/scan-barcode", productMasterController.ScanBarcodeWarehouse)
 		api.POST("/rack-stagings/:rackStagingID/finish", rackStagingController.Finish)
+
+		// Rack Staging Sticker (Bag)
+		api.POST("/rack-stagings-sticker", rackStagingStickerController.Create)
+		api.GET("/rack-stagings-sticker", rackStagingStickerController.List)
+		api.GET("/rack-stagings-sticker/:id", rackStagingStickerController.GetDetail)
+		api.GET("/rack-stagings-sticker/:id/products", rackStagingStickerController.ListByBagID)
+		api.POST("/rack-stagings-sticker/:id/scanner/scan-barcode", rackStagingStickerController.ScanBarcodeWarehouse)
 
 		// Categories
 		api.POST("/categories", categoryController.CreateCategory)

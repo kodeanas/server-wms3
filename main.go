@@ -5,11 +5,9 @@ import (
 	"os"
 
 	"wms/config"
-	"wms/controller"
 	"wms/models"
-	"wms/repositories"
 	"wms/routes"
-	"wms/services"
+	"wms/seed"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,14 +15,15 @@ import (
 func main() {
 	config.ConnectDB()
 
+	if len(os.Args) > 1 && os.Args[1] == "seed" {
+		seed.SeedSticker()
+		return // keluar setelah seed
+	}
+
 	// Auto migrate models
 	if err := config.DB.AutoMigrate(&models.Category{}, &models.Sticker{}); err != nil {
 		log.Fatal("auto migrate failed:", err)
 	}
-
-	categoryRepo := repositories.NewCategoryRepository(config.DB)
-	categoryService := services.NewCategoryService(categoryRepo)
-	_ = controller.NewCategoryController(categoryService) // keep initialization if needed later
 
 	router := gin.Default()
 
