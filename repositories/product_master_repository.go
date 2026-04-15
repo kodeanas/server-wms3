@@ -19,6 +19,10 @@ type ProductMasterRepository interface {
 	Update(master *models.ProductMaster) error
 	FindByDocumentAndDateRange(documentCode string, from, to time.Time) ([]models.ProductMaster, error)
 	Create(master *models.ProductMaster) error
+	FindByBarcodeWarehouse(barcode string) (*models.ProductMaster, error)
+	UpdateRackStagingID(id string, rackStagingID string) error
+	FindAllByRackStagingID(rackStagingID string) ([]models.ProductMaster, error)
+	MoveAllToDisplay(rackStagingID, rackDisplayID string) error
 }
 
 type productMasterRepository struct {
@@ -276,4 +280,38 @@ func (r *productMasterRepository) FindByDocumentAndDateRange(documentCode string
 		Order("product_masters.created_at DESC").
 		Find(&masters).Error
 	return masters, err
+}
+
+// Find product master by barcode_warehouse
+func (r *productMasterRepository) FindByBarcodeWarehouse(barcode string) (*models.ProductMaster, error) {
+	var master models.ProductMaster
+	err := r.db.Where("barcode_warehouse = ? AND deleted_at IS NULL", barcode).First(&master).Error
+	if err != nil {
+		return nil, err
+	}
+	return &master, nil
+}
+
+// Update rack_staging_id for product master
+func (r *productMasterRepository) UpdateRackStagingID(id string, rackStagingID string) error {
+	return r.db.Model(&models.ProductMaster{}).
+		Where("id = ? AND deleted_at IS NULL", id).
+		Update("rack_staging_id", rackStagingID).Error
+}
+
+// Find all product masters by rack staging id
+func (r *productMasterRepository) FindAllByRackStagingID(rackStagingID string) ([]models.ProductMaster, error) {
+	var masters []models.ProductMaster
+	err := r.db.Where("rack_staging_id = ? AND deleted_at IS NULL", rackStagingID).Order("created_at DESC").Find(&masters).Error
+	return masters, err
+}
+
+// Update massal product master pada rack staging: set rack_display_id dan location
+func (r *productMasterRepository) MoveAllToDisplay(rackStagingID, rackDisplayID string) error {
+	return r.db.Model(&models.ProductMaster{}).
+		Where("rack_staging_id = ? AND deleted_at IS NULL", rackStagingID).
+		Updates(map[string]interface{}{
+			"rack_display_id": rackDisplayID,
+			"location": "display",
+		}).Error
 }
