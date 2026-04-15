@@ -70,10 +70,25 @@ func (s *RackStagingService) GetRackStagingDetail(id string) (*dto.RackStagingDe
 	if err != nil {
 		return nil, err
 	}
+	// Hitung total item dan total harga
+	var totalItem int
+	var totalPrice float64
+	// Ambil product master yang ada di rack staging ini
+	// (akses langsung repository, asumsikan sudah ada)
+	productMasters, err := repositories.NewProductMasterRepository(s.RackStagingRepo.DB).FindAllByRackStagingID(id)
+	if err == nil {
+		for _, pm := range productMasters {
+			totalItem += pm.ItemWarehouse
+			totalPrice += pm.PriceWarehouse
+		}
+	}
 	resp := &dto.RackStagingDetailResponse{
-		Code:            rack.Code,
-		RackDisplayName: display.Name,
-		CreatedAt:       rack.CreatedAt.Format(time.RFC3339),
+		Code:                rack.Code,
+		RackDisplayName:     display.Name,
+		CreatedAt:           rack.CreatedAt.Format(time.RFC3339),
+		IsMoved:             rack.IsMoved,
+		TotalItem:           totalItem,
+		TotalPriceWarehouse: totalPrice,
 	}
 	return resp, nil
 }
