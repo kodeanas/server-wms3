@@ -123,6 +123,8 @@ func SetupRoutes(r *gin.Engine) {
 		// Product Master Staging Reguler
 		api.GET("/product-masters/staging-reguler", productMasterController.ListStagingReguler)
 		api.GET("/product-masters/staging-sticker", productMasterController.ListStagingSticker)
+		api.POST("/product-masters/staging/:id", productMasterController.UpdateStaging)
+		api.GET("/product-masters/:id", productMasterController.GetDetail)
 
 		// Product Document
 		api.GET("/product-documents", productDocumentController.ListDocuments)
