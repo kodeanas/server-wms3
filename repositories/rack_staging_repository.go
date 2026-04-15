@@ -44,3 +44,17 @@ func (r *RackStagingRepository) CountByRackDisplayID(rackDisplayID string) (int6
 	err := r.DB.Model(&models.RackStaging{}).Where("rack_display_id = ? AND deleted_at IS NULL", rackDisplayID).Count(&count).Error
 	return count, err
 }
+
+// Find all rack stagings
+func (r *RackStagingRepository) FindAllRackStaging() ([]models.RackStaging, error) {
+	var racks []models.RackStaging
+	err := r.DB.Where("deleted_at IS NULL").Order("created_at DESC").Find(&racks).Error
+	return racks, err
+}
+
+// Set is_moved = true untuk rack staging tertentu
+func (r *RackStagingRepository) SetIsMoved(rackStagingID string) error {
+	return r.DB.Model(&models.RackStaging{}).
+		Where("id = ? AND deleted_at IS NULL", rackStagingID).
+		Update("is_moved", true).Error
+}

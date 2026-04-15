@@ -77,3 +77,25 @@ func (s *RackStagingService) GetRackStagingDetail(id string) (*dto.RackStagingDe
 	}
 	return resp, nil
 }
+
+// List all rack stagings
+func (s *RackStagingService) ListAllRackStaging() ([]models.RackStaging, error) {
+	return s.RackStagingRepo.FindAllRackStaging()
+}
+
+// Finish rack staging: set is_moved, update semua product master ke display
+func (s *RackStagingService) FinishRackStaging(rackStagingID string, productMasterRepo repositories.ProductMasterRepository) error {
+	rack, err := s.RackStagingRepo.FindByID(rackStagingID)
+	if err != nil {
+		return err
+	}
+	// Set is_moved = true
+	if err := s.RackStagingRepo.SetIsMoved(rackStagingID); err != nil {
+		return err
+	}
+	// Update semua product master di rack staging ini
+	if err := productMasterRepo.MoveAllToDisplay(rackStagingID, rack.RackDisplayID.String()); err != nil {
+		return err
+	}
+	return nil
+}

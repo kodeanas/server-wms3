@@ -47,12 +47,16 @@ func (ctl *ProductMasterController) ScanBarcodeWarehouse(c *gin.Context) {
 		return
 	}
 	if rackStagingID == "" {
-		utils.SendError(c, 400, "Missing rackStagingID parameter")
+		utils.SendError(c, 400, "Kolom rackStagingID kosong")
 		return
 	}
 	master, err := ctl.service.GetByBarcodeWarehouse(req.BarcodeWarehouse)
 	if err != nil {
-		utils.SendError(c, 404, "Product not found")
+		utils.SendError(c, 404, "Produk tidak ditemukan")
+		return
+	}
+	if master.RackStagingID != nil && *master.RackStagingID != "" {
+		utils.SendError(c, 400, "Produk sudah dimasukkan ke rack staging, tidak dapat di scan ulang")
 		return
 	}
 	// Assign product to rack staging
@@ -72,4 +76,19 @@ func (ctl *ProductMasterController) ScanBarcodeWarehouse(c *gin.Context) {
 		RackStagingID:    master.RackStagingID,
 	}
 	utils.SendSuccess(c, resp, "Product assigned to rack staging", nil, http.StatusOK)
+}
+
+// List all product master in a rack staging
+func (ctl *ProductMasterController) ListByRackStagingID(c *gin.Context) {
+	rackStagingID := c.Param("rackStagingID")
+	if rackStagingID == "" {
+		utils.SendError(c, 400, "Kolom rackStagingID kosong")
+		return
+	}
+	masters, err := ctl.service.ListByRackStagingID(rackStagingID)
+	if err != nil {
+		utils.SendError(c, 500, err.Error())
+		return
+	}
+	utils.SendSuccess(c, masters, "List produk di rack staging", nil, http.StatusOK)
 }

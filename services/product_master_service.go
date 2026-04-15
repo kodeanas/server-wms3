@@ -12,6 +12,7 @@ type ProductMasterService interface {
 	GetStagingSticker() ([]dto.ProductMasterStickerResponse, error)
 	GetByBarcodeWarehouse(barcode string) (*models.ProductMaster, error)
 	SetRackStaging(id string, rackStagingID string) error
+	ListByRackStagingID(rackStagingID string) ([]models.ProductMaster, error)
 }
 
 type productMasterService struct {
@@ -42,4 +43,9 @@ func (s *productMasterService) GetByBarcodeWarehouse(barcode string) (*models.Pr
 // Set rack_staging_id for product master
 func (s *productMasterService) SetRackStaging(id string, rackStagingID string) error {
 	return s.repo.UpdateRackStagingID(id, rackStagingID)
+}
+
+// List all product master in a rack staging
+func (s *productMasterService) ListByRackStagingID(rackStagingID string) ([]models.ProductMaster, error) {
+	return s.repo.FindAllByRackStagingID(rackStagingID)
 }
