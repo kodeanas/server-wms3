@@ -82,6 +82,8 @@ func (ctl *ProductMasterController) UpdateStaging(c *gin.Context) {
 	}
 
 	utils.SendSuccess(c, updated, "Product master staging updated", nil, http.StatusOK)
+}
+
 // Scan product master by barcode_warehouse and assign to rack staging
 func (ctl *ProductMasterController) ScanBarcodeWarehouse(c *gin.Context) {
 	rackStagingID := c.Param("rackStagingID")
@@ -99,6 +101,11 @@ func (ctl *ProductMasterController) ScanBarcodeWarehouse(c *gin.Context) {
 	master, err := ctl.service.GetByBarcodeWarehouse(req.BarcodeWarehouse)
 	if err != nil {
 		utils.SendError(c, 404, "Produk tidak ditemukan")
+		return
+	}
+	// Filter hanya location staging_reguler
+	if master.Location != "staging_reguler" {
+		utils.SendError(c, 400, "Hanya produk dengan lokasi staging_reguler yang dapat di-scan ke rack staging")
 		return
 	}
 	if master.RackStagingID != nil && *master.RackStagingID != "" {

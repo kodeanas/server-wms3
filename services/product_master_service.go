@@ -103,6 +103,8 @@ func stickerPriceWarehouse(sticker *models.Sticker) float64 {
 		return 0
 	}
 	return float64(*sticker.FixedPrice)
+}
+
 // Get product master by barcode_warehouse
 func (s *productMasterService) GetByBarcodeWarehouse(barcode string) (*models.ProductMaster, error) {
 	return s.repo.FindByBarcodeWarehouse(barcode)

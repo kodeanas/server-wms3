@@ -23,6 +23,8 @@ type ProductMasterRepository interface {
 	UpdateRackStagingID(id string, rackStagingID string) error
 	FindAllByRackStagingID(rackStagingID string) ([]models.ProductMaster, error)
 	MoveAllToDisplay(rackStagingID, rackDisplayID string) error
+	UpdateBagID(productID string, bagID string) error
+	FindByBagID(bagID string) ([]models.ProductMaster, error)
 }
 
 type productMasterRepository struct {
@@ -312,6 +314,20 @@ func (r *productMasterRepository) MoveAllToDisplay(rackStagingID, rackDisplayID 
 		Where("rack_staging_id = ? AND deleted_at IS NULL", rackStagingID).
 		Updates(map[string]interface{}{
 			"rack_display_id": rackDisplayID,
-			"location": "display",
+			"location":        "display",
 		}).Error
+}
+
+// Update bag_id untuk product master
+func (r *productMasterRepository) UpdateBagID(productID string, bagID string) error {
+	return r.db.Model(&models.ProductMaster{}).
+		Where("id = ? AND deleted_at IS NULL", productID).
+		Update("bag_id", bagID).Error
+}
+
+// List all product master in a bag (rackStagingSticker)
+func (r *productMasterRepository) FindByBagID(bagID string) ([]models.ProductMaster, error) {
+	var masters []models.ProductMaster
+	err := r.db.Where("bag_id = ? AND deleted_at IS NULL", bagID).Order("created_at DESC").Find(&masters).Error
+	return masters, err
 }
