@@ -82,6 +82,8 @@ func (ctl *ProductMasterController) UpdateStaging(c *gin.Context) {
 	}
 
 	utils.SendSuccess(c, updated, "Product master staging updated", nil, http.StatusOK)
+}
+
 // Scan product master by barcode_warehouse and assign to rack staging
 func (ctl *ProductMasterController) ScanBarcodeWarehouse(c *gin.Context) {
 	rackStagingID := c.Param("rackStagingID")
