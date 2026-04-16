@@ -70,6 +70,7 @@ func SetupRoutes(r *gin.Engine) {
 		api.POST("/rack-displays", rackDisplayController.Create)
 		api.GET("/rack-displays", rackDisplayController.GetAll)
 		api.GET("/rack-displays/:id", rackDisplayController.GetByID)
+		api.GET("/rack-displays/:id/detail", rackDisplayController.GetDetail)
 		api.PUT("/rack-displays/:id", rackDisplayController.Update)
 		api.DELETE("/rack-displays/:id", rackDisplayController.Delete)
 

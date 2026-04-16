@@ -79,3 +79,14 @@ func (ctl *RackDisplayController) Delete(c *gin.Context) {
 	}
 	utils.SendSuccess(c, nil, "Rack display deleted successfully", nil, http.StatusOK)
 }
+
+// GET /rack-displays/:id/detail
+func (ctl *RackDisplayController) GetDetail(c *gin.Context) {
+	id := c.Param("id")
+	detail, err := ctl.Service.GetDetail(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+	utils.SendSuccess(c, detail, "Rack display detail retrieved successfully", nil, http.StatusOK)
+}
