@@ -103,6 +103,10 @@ func (ctl *ProductMasterController) ScanBarcodeWarehouse(c *gin.Context) {
 		utils.SendError(c, 404, "Produk tidak ditemukan")
 		return
 	}
+	if master.RackDisplayID != nil {
+		utils.SendError(c, 400, "Produk sudah dipajang di rak display, tidak dapat di scan ke rack staging")
+		return
+	}
 	// Filter hanya location staging_reguler
 	if master.Location != "staging_reguler" {
 		utils.SendError(c, 400, "Hanya produk dengan lokasi staging_reguler yang dapat di-scan ke rack staging")

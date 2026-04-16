@@ -66,7 +66,7 @@ func (s *rackStagingStickerService) GetBagByID(id string) (*models.Bag, error) {
 }
 
 func (s *rackStagingStickerService) ListBags() ([]models.Bag, error) {
-	return s.repo.FindAll()
+	return s.repo.FindByType("sticker")
 }
 
 func (s *rackStagingStickerService) GetProductByBarcodeWarehouse(barcode string) (*models.ProductMaster, error) {
