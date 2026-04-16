@@ -91,9 +91,8 @@ func SetupRoutes(r *gin.Engine) {
 		// Wholesale Bag
 		api.POST("/wholesale-bags", wholesaleBagController.Create)
 		api.GET("/wholesale-bags", wholesaleBagController.List)
-		api.GET("/wholesale-bags/:bagID", wholesaleBagController.GetDetail)
-		api.GET("/wholesale-bags/:bagID/products", wholesaleBagController.ListByBagID)
 		api.GET("/wholesale-bags/:bagID/detail", wholesaleBagController.GetDetail)
+		api.GET("/wholesale-bags/:bagID/products", wholesaleBagController.ListByBagID)
 		api.POST("/wholesale-bags/:bagID/scanner/scan-barcode", wholesaleBagController.ScanBarcodeWarehouse)
 
 		// Categories

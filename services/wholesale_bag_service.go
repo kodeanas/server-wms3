@@ -39,7 +39,7 @@ func (s *wholesaleBagService) CreateWholesaleBag(userID string) (*models.Bag, er
 	}
 	bag := &models.Bag{
 		Code:      fmt.Sprintf("WHOLESALE-%d", time.Now().UnixNano()),
-		Type:      "wholesale",
+		Type:      "reguler",
 		IsMoved:   false,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -54,17 +54,7 @@ func (s *wholesaleBagService) CreateWholesaleBag(userID string) (*models.Bag, er
 }
 
 func (s *wholesaleBagService) ListWholesaleBags() ([]models.Bag, error) {
-	all, err := s.repo.FindAll()
-	if err != nil {
-		return nil, err
-	}
-	var result []models.Bag
-	for _, b := range all {
-		if b.Type == "wholesale" {
-			result = append(result, b)
-		}
-	}
-	return result, nil
+       return s.repo.FindByType("reguler")
 }
 
 func (s *wholesaleBagService) GetWholesaleBagByID(id string) (*models.Bag, error) {
@@ -72,8 +62,8 @@ func (s *wholesaleBagService) GetWholesaleBagByID(id string) (*models.Bag, error
 	if err != nil {
 		return nil, err
 	}
-	if bag.Type != "wholesale" {
-		return nil, fmt.Errorf("Bag bukan tipe wholesale")
+	if bag.Type != "reguler" {
+		return nil, fmt.Errorf("Bag bukan tipe reguler")
 	}
 	return bag, nil
 }
@@ -87,8 +77,8 @@ func (s *wholesaleBagService) GetWholesaleBagDetail(bagID string) (*dto.RackStag
 	if err != nil {
 		return nil, err
 	}
-	if bag.Type != "wholesale" {
-		return nil, fmt.Errorf("Bag bukan tipe wholesale")
+	if bag.Type != "reguler" {
+		return nil, fmt.Errorf("Bag bukan tipe reguler")
 	}
 	products, err := s.productMasterRepo.FindByBagID(bagID)
 	if err != nil {

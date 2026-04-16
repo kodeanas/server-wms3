@@ -68,7 +68,7 @@ CREATE INDEX IF NOT EXISTS idx_cargos_user_id ON cargos(user_id);
 CREATE TABLE IF NOT EXISTS bags (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code VARCHAR(255) NOT NULL,
-    type VARCHAR(50) CHECK (type IN ('sticker', 'regular', 'qcd', 'scrap', 'bkl')),
+    type VARCHAR(50) CHECK (type IN ('sticker', 'reguler', 'qcd', 'scrap', 'bkl')),
     user_id UUID,  -- Ubah dari CHAR(36) ke UUID
     is_moved BOOLEAN DEFAULT false,
     date_out DATE,

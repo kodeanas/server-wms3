@@ -10,6 +10,7 @@ type BagRepository interface {
 	Create(bag *models.Bag) error
 	FindByID(id string) (*models.Bag, error)
 	FindAll() ([]models.Bag, error)
+    FindByType(bagType string) ([]models.Bag, error)
 }
 
 type bagRepository struct {
@@ -36,5 +37,11 @@ func (r *bagRepository) FindByID(id string) (*models.Bag, error) {
 func (r *bagRepository) FindAll() ([]models.Bag, error) {
 	var bags []models.Bag
 	err := r.db.Find(&bags).Error
+	return bags, err
+}
+
+func (r *bagRepository) FindByType(bagType string) ([]models.Bag, error) {
+	var bags []models.Bag
+	err := r.db.Where("type = ?", bagType).Find(&bags).Error
 	return bags, err
 }
