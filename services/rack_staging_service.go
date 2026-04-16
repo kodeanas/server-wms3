@@ -70,15 +70,13 @@ func (s *RackStagingService) GetRackStagingDetail(id string) (*dto.RackStagingDe
 	if err != nil {
 		return nil, err
 	}
-	// Hitung total item dan total harga
-	var totalItem int
-	var totalPrice float64
 	// Ambil product master yang ada di rack staging ini
-	// (akses langsung repository, asumsikan sudah ada)
 	productMasters, err := repositories.NewProductMasterRepository(s.RackStagingRepo.DB).FindAllByRackStagingID(id)
+	totalItem := 0
+	totalPrice := 0.0
 	if err == nil {
+		totalItem = len(productMasters)
 		for _, pm := range productMasters {
-			totalItem += pm.ItemWarehouse
 			totalPrice += pm.PriceWarehouse
 		}
 	}
