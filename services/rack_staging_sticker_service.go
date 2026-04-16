@@ -38,13 +38,6 @@ func generateBagCode() string {
 }
 
 func (s *rackStagingStickerService) CreateStickerBag(userID string) (*models.Bag, error) {
-	var uidPtr *uuid.UUID
-	if userID != "" {
-		uid, err := uuid.Parse(userID)
-		if err == nil {
-			uidPtr = &uid
-		}
-	}
 	bag := &models.Bag{
 		Code:      generateBagCode(),
 		Type:      "sticker",
@@ -52,8 +45,10 @@ func (s *rackStagingStickerService) CreateStickerBag(userID string) (*models.Bag
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	if uidPtr != nil {
-		bag.UserID = *uidPtr
+	if userID != "" {
+		if uid, err := uuid.Parse(userID); err == nil && uid != uuid.Nil {
+			bag.UserID = &uid
+		}
 	}
 	if err := s.repo.Create(bag); err != nil {
 		return nil, err
