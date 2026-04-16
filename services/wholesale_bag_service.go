@@ -30,13 +30,6 @@ func NewWholesaleBagService(repo repositories.BagRepository, productMasterRepo r
 }
 
 func (s *wholesaleBagService) CreateWholesaleBag(userID string) (*models.Bag, error) {
-	var uidPtr *uuid.UUID
-	if userID != "" {
-		uid, err := uuid.Parse(userID)
-		if err == nil {
-			uidPtr = &uid
-		}
-	}
 	bag := &models.Bag{
 		Code:      fmt.Sprintf("WHOLESALE-%d", time.Now().UnixNano()),
 		Type:      "reguler",
@@ -44,8 +37,10 @@ func (s *wholesaleBagService) CreateWholesaleBag(userID string) (*models.Bag, er
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	if uidPtr != nil {
-		bag.UserID = *uidPtr
+	if userID != "" {
+		if uid, err := uuid.Parse(userID); err == nil && uid != uuid.Nil {
+			bag.UserID = &uid
+		}
 	}
 	if err := s.repo.Create(bag); err != nil {
 		return nil, err
@@ -54,7 +49,7 @@ func (s *wholesaleBagService) CreateWholesaleBag(userID string) (*models.Bag, er
 }
 
 func (s *wholesaleBagService) ListWholesaleBags() ([]models.Bag, error) {
-       return s.repo.FindByType("reguler")
+	return s.repo.FindByType("reguler")
 }
 
 func (s *wholesaleBagService) GetWholesaleBagByID(id string) (*models.Bag, error) {
