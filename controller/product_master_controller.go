@@ -35,6 +35,10 @@ func (ctl *ProductMasterController) ListStagingSticker(c *gin.Context) {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
+	// Jika hasil kosong, kirim array kosong, bukan null
+	if masters == nil {
+		masters = make([]dto.ProductMasterStickerResponse, 0)
+	}
 	utils.SendSuccess(c, masters, "List product master staging_sticker", nil, http.StatusOK)
 }
 

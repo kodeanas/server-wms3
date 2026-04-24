@@ -11,7 +11,7 @@ import (
 func SeedSticker() {
 	stickers := []models.Sticker{
 		{
-			CodeHex:    "FF5733",
+			CodeHex:    "#FF5733",
 			Name:       "Merah",
 			Slug:       utils.GenerateSlug("Merah"),
 			Type:       "big",
@@ -20,7 +20,7 @@ func SeedSticker() {
 			MaxPrice:   PricePtr(99999),
 		},
 		{
-			CodeHex:    "FFFF00",
+			CodeHex:    "#FFFF00",
 			Name:       "Kuning",
 			Slug:       utils.GenerateSlug("Kuning"),
 			Type:       "tiny",
@@ -29,7 +29,7 @@ func SeedSticker() {
 			MaxPrice:   PricePtr(49999),
 		},
 		{
-			CodeHex:    "00FF00",
+			CodeHex:    "#00FF00",
 			Name:       "Hijau",
 			Slug:       utils.GenerateSlug("Hijau"),
 			Type:       "small",
