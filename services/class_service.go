@@ -13,6 +13,8 @@ type ClassService interface {
 	ListClasses() ([]models.Class, error)
 	UpdateClass(id string, input UpdateClassPayload) (*models.Class, error)
 	DeleteClass(id string) error
+	MoveUp(id string) error
+	MoveDown(id string) error
 }
 
 type CreateClassPayload struct {
@@ -44,20 +46,24 @@ func NewClassService(repo repositories.ClassRepository) ClassService {
 }
 
 func (s *classService) CreateClass(input CreateClassPayload) (*models.Class, error) {
-	class := &models.Class{
-		ID:                  uuid.New(),
-		Name:                input.Name,
-		MinOrder:            input.MinOrder,
-		Disc:                input.Disc,
-		MinTransactionValue: input.MinTransactionValue,
-		Week:                input.Week,
-		Iteration:           input.Iteration,
-		Status:              input.Status,
-	}
-	if err := s.repo.Create(class); err != nil {
-		return nil, err
-	}
-	return class, nil
+       maxIter, err := s.repo.GetMaxIteration()
+       if err != nil {
+	       return nil, err
+       }
+       class := &models.Class{
+	       ID:                  uuid.New(),
+	       Name:                input.Name,
+	       MinOrder:            input.MinOrder,
+	       Disc:                input.Disc,
+	       MinTransactionValue: input.MinTransactionValue,
+	       Week:                input.Week,
+	       Iteration:           maxIter + 1,
+	       Status:              input.Status,
+       }
+       if err := s.repo.Create(class); err != nil {
+	       return nil, err
+       }
+       return class, nil
 }
 
 func (s *classService) GetClassByID(id string) (*models.Class, error) {
@@ -95,5 +101,37 @@ func (s *classService) UpdateClass(id string, input UpdateClassPayload) (*models
 }
 
 func (s *classService) DeleteClass(id string) error {
-	return s.repo.Delete(id)
+       class, err := s.repo.GetByID(id)
+       if err != nil {
+	       return err
+       }
+       deletedIter := class.Iteration
+       if err := s.repo.Delete(id); err != nil {
+	       return err
+       }
+       return s.repo.DecrementIterationAbove(deletedIter)
+}
+
+func (s *classService) MoveUp(id string) error {
+       class, err := s.repo.GetByID(id)
+       if err != nil {
+	       return err
+       }
+       prev, err := s.repo.GetPrevByIteration(class.Iteration)
+       if err != nil {
+	       return err // Sudah paling atas atau error lain
+       }
+       return s.repo.SwapIteration(class, prev)
+}
+
+func (s *classService) MoveDown(id string) error {
+       class, err := s.repo.GetByID(id)
+       if err != nil {
+	       return err
+       }
+       next, err := s.repo.GetNextByIteration(class.Iteration)
+       if err != nil {
+	       return err // Sudah paling bawah atau error lain
+       }
+       return s.repo.SwapIteration(class, next)
 }
