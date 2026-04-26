@@ -111,3 +111,23 @@ func (ctrl *ClassController) DeleteClass(c *gin.Context) {
 	}
 	utils.SendSuccess(c, nil, "Class berhasil dihapus", nil, http.StatusOK)
 }
+
+// MoveUp endpoint: naikkan urutan class
+func (ctrl *ClassController) MoveUp(c *gin.Context) {
+	id := c.Param("id")
+	if err := ctrl.service.MoveUp(id); err != nil {
+		utils.SendError(c, 400, err.Error())
+		return
+	}
+	utils.SendSuccessWithMetaNull(c, nil, "Class berhasil dinaikkan")
+}
+
+// MoveDown endpoint: turunkan urutan class
+func (ctrl *ClassController) MoveDown(c *gin.Context) {
+	id := c.Param("id")
+	if err := ctrl.service.MoveDown(id); err != nil {
+		utils.SendError(c, 400, err.Error())
+		return
+	}
+	utils.SendSuccessWithMetaNull(c, nil, "Class berhasil diturunkan")
+}
