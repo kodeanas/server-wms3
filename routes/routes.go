@@ -31,6 +31,9 @@ func SetupRoutes(r *gin.Engine) {
 	bagRepo := repositories.NewBagRepository(config.DB)
 	userRepo := repositories.NewUserRepository(config.DB)
 	taxRepo := repositories.NewTaxRepository(config.DB)
+	orderRepo := repositories.NewOrderRepository(config.DB)
+	productOrderRepo := repositories.NewProductOrderRepository(config.DB)
+	discountOrderRepo := repositories.NewDiscountOrderRepository(config.DB)
 	// TODO: Tambahkan repository product_pending dan product_repair jika sudah ada
 	// productPendingRepo := repositories.NewProductPendingRepository(config.DB)
 	// productRepairRepo := repositories.NewProductRepairRepository(config.DB)
@@ -51,6 +54,7 @@ func SetupRoutes(r *gin.Engine) {
 	wholesaleBagService := services.NewWholesaleBagService(bagRepo, productMasterRepo)
 	userService := services.NewUserService(userRepo)
 	taxService := services.NewTaxService(taxRepo)
+	outboundRegulerService := services.NewOutboundRegulerService(buyerRepo, classRepo, orderRepo, productOrderRepo, discountOrderRepo, categoryRepo, productMasterRepo)
 
 	// Controllers
 	categoryController := controller.NewCategoryController(categoryService)
@@ -67,10 +71,12 @@ func SetupRoutes(r *gin.Engine) {
 	wholesaleBagController := controller.NewWholesaleBagController(wholesaleBagService)
 	userController := controller.NewUserController(userService)
 	taxController := controller.NewTaxController(taxService)
+	outboundRegulerController := controller.NewOutboundRegulerController(outboundRegulerService)
 
 	// Public API
 	api := r.Group("/api")
 	{
+
 		// Taxes
 		api.POST("/taxes", taxController.Create)
 		api.GET("/taxes", taxController.List)
@@ -90,7 +96,7 @@ func SetupRoutes(r *gin.Engine) {
 		// Rack Displays
 		api.POST("/rack-displays", rackDisplayController.Create)
 		api.GET("/rack-displays", rackDisplayController.GetAll)
-		api.GET("/rack-displays/:id/detail", rackDisplayController.GetByID)
+		api.GET("/rack-displays/:id/detail", rackDisplayController.GetDetail)
 		api.PUT("/rack-displays/:id", rackDisplayController.Update)
 		api.DELETE("/rack-displays/:id", rackDisplayController.Delete)
 
@@ -137,14 +143,14 @@ func SetupRoutes(r *gin.Engine) {
 		api.PUT("/buyers/:id", buyerController.UpdateBuyer)
 		api.DELETE("/buyers/:id", buyerController.DeleteBuyer)
 
-			   // Classes
-			   api.POST("/classes", classController.CreateClass)
-			   api.GET("/classes", classController.ListClasses)
-			   api.GET("/classes/:id", classController.GetClassByID)
-			   api.PUT("/classes/:id", classController.UpdateClass)
-			   api.DELETE("/classes/:id", classController.DeleteClass)
-			   api.PUT("/classes/:id/up", classController.MoveUp)
-			   api.PUT("/classes/:id/down", classController.MoveDown)
+		// Classes
+		api.POST("/classes", classController.CreateClass)
+		api.GET("/classes", classController.ListClasses)
+		api.GET("/classes/:id", classController.GetClassByID)
+		api.PUT("/classes/:id", classController.UpdateClass)
+		api.DELETE("/classes/:id", classController.DeleteClass)
+		api.PUT("/classes/:id/up", classController.MoveUp)
+		api.PUT("/classes/:id/down", classController.MoveDown)
 
 		// Inbound Manual
 		api.GET("/inbound/list-masters", controller.ListAllProductMastersHandler(config.DB))
@@ -187,5 +193,17 @@ func SetupRoutes(r *gin.Engine) {
 		api.POST("/inbound-sku/crosscheck/:pending_id", inboundSKUController.CrosscheckPending)
 		api.POST("/inbound-sku/finish/:document_id", inboundSKUController.FinishInboundSKU)
 		api.GET("/inbound-sku/document/:document_id", controller.InboundSKUGetDocumentHandler(config.DB))
+
+		// Outbound Reguler
+		api.GET("/outbound-reguler/buyers", outboundRegulerController.GetBuyers)
+		api.GET("/outbound-reguler/buyers/:id/class-info", outboundRegulerController.GetBuyerClassInfo)
+		api.POST("/outbound-reguler/scan", outboundRegulerController.ScanProduct)
+		api.POST("/outbound-reguler/product", outboundRegulerController.AddProduct)
+		api.DELETE("/outbound-reguler/product/:id", outboundRegulerController.DeleteProduct)
+		api.POST("/outbound-reguler/discount", outboundRegulerController.AddDiscount)
+		api.PATCH("/outbound-reguler/tax", outboundRegulerController.UpdateTax)
+		api.PATCH("/outbound-reguler/box", outboundRegulerController.UpdateBox)
+		api.POST("/outbound-reguler/complete", outboundRegulerController.CompleteOrder)
+		api.GET("/outbound-reguler/:order_id", outboundRegulerController.GetOrderDetail)
 	}
 }
