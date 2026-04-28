@@ -100,7 +100,7 @@ func SetupRoutes(r *gin.Engine) {
 		api.PUT("/rack-displays/:id", rackDisplayController.Update)
 		api.DELETE("/rack-displays/:id", rackDisplayController.Delete)
 
-		// Rack Stagings
+		// Rack Stagings Reguler
 		api.GET("/rack-stagings", rackStagingController.ListAll)
 		api.GET("/rack-stagings/:rackStagingID", rackStagingController.GetDetail)
 		api.POST("/rack-stagings", rackStagingController.Create)
@@ -204,6 +204,7 @@ func SetupRoutes(r *gin.Engine) {
 		api.PATCH("/outbound-reguler/tax", outboundRegulerController.UpdateTax)
 		api.PATCH("/outbound-reguler/box", outboundRegulerController.UpdateBox)
 		api.POST("/outbound-reguler/complete", outboundRegulerController.CompleteOrder)
+		api.GET("/outbound-reguler/orders", outboundRegulerController.ListOrders)
 		api.GET("/outbound-reguler/:order_id", outboundRegulerController.GetOrderDetail)
 	}
 }

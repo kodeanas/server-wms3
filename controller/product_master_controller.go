@@ -3,7 +3,9 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"wms/config"
 	dto "wms/dto/response"
+	"wms/repositories"
 	"wms/services"
 	"wms/utils"
 
@@ -107,6 +109,18 @@ func (ctl *ProductMasterController) ScanBarcodeWarehouse(c *gin.Context) {
 		utils.SendError(c, 404, "Produk tidak ditemukan")
 		return
 	}
+
+	// Tambahkan validasi rack staging sudah di-lock
+	isLocked, err := IsRackStagingLocked(rackStagingID)
+	if err != nil {
+		utils.SendError(c, 500, "Gagal cek status rack staging")
+		return
+	}
+	if isLocked {
+		utils.SendError(c, 400, "Rack staging sudah di-lock, tidak bisa menambah produk lagi")
+		return
+	}
+
 	if master.RackDisplayID != nil {
 		utils.SendError(c, 400, "Produk sudah dipajang di rak display, tidak dapat di scan ke rack staging")
 		return
@@ -152,4 +166,14 @@ func (ctl *ProductMasterController) ListByRackStagingID(c *gin.Context) {
 		return
 	}
 	utils.SendSuccess(c, masters, "List produk di rack staging", nil, http.StatusOK)
+}
+
+// Helper untuk validasi rack staging sudah di-lock
+func IsRackStagingLocked(rackStagingID string) (bool, error) {
+	repo := repositories.NewRackStagingRepository(config.DB)
+	rack, err := repo.FindByID(rackStagingID)
+	if err != nil {
+		return false, err
+	}
+	return rack.IsMoved, nil
 }

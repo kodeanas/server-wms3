@@ -5,6 +5,8 @@ import (
 	"time"
 	"wms/models"
 	"wms/repositories"
+
+	"github.com/google/uuid"
 )
 
 type OutboundRegulerService interface {
@@ -18,6 +20,7 @@ type OutboundRegulerService interface {
 	UpdateBox(ctx interface{}) interface{}
 	CompleteOrder(ctx interface{}) interface{}
 	GetOrderDetail(orderID string) interface{}
+	ListOrders() interface{}
 }
 
 type outboundRegulerService struct {
@@ -136,10 +139,26 @@ func (s *outboundRegulerService) ScanProduct(ctx interface{}) interface{} {
 	// Jika order_id kosong, buat order baru
 	var order *models.Order
 	if orderID == "" {
+		// Ambil buyer dan class_id
+		buyer, err := s.buyerRepo.GetByID(buyerID)
+		if err != nil || buyer == nil {
+			return map[string]interface{}{"error": "Buyer tidak ditemukan"}
+		}
+		buyerUUID, err := uuid.Parse(buyerID)
+		if err != nil {
+			return map[string]interface{}{"error": "BuyerID tidak valid"}
+		}
+		classUUID, err := uuid.Parse(buyer.ClassID)
+		if err != nil {
+			return map[string]interface{}{"error": "ClassID buyer tidak valid"}
+		}
 		order = &models.Order{
-			BuyerID: buyerID,
+			UserID:  nil,
+			BuyerID: buyerUUID,
+			ClassID: classUUID,
 			Type:    "regular",
 			Status:  "progress",
+			Code:    fmt.Sprintf("ORD-%d", time.Now().UnixNano()),
 		}
 		if err := s.orderRepo.Create(order); err != nil {
 			return map[string]interface{}{"error": "Gagal membuat order"}
@@ -160,17 +179,45 @@ func (s *outboundRegulerService) ScanProduct(ctx interface{}) interface{} {
 		}
 	}
 
+	// Validasi: produk dengan barcode sama sudah ada di order?
+	products, _ := s.productOrderRepo.ListByOrderID(order.ID.String())
+	for _, p := range products {
+		if p.ProductID == product.ID.String() {
+			return map[string]interface{}{"error": "Produk sudah pernah discan di order ini"}
+		}
+	}
 	// Tambah product order
 	po := &models.ProductOrder{
-		OrderID:   order.ID.String(),
-		ProductID: product.ID.String(),
-		Name:      product.Name,
-		Price:     product.Price,
-		Discount:  discount,
+		OrderID:        order.ID.String(),
+		ProductID:      product.ID.String(),
+		Name:           product.Name,
+		Price:          product.Price,
+		PriceWarehouse: product.PriceWarehouse,
+		Discount:       discount,
 	}
 	if err := s.productOrderRepo.Create(po); err != nil {
 		return map[string]interface{}{"error": "Gagal menambah produk ke order"}
 	}
+
+	// Kalkulasi total harga produk dan grand total (pakai price_warehouse)
+	products, _ = s.productOrderRepo.ListByOrderID(order.ID.String())
+	totalProduk := 0.0
+	for _, p := range products {
+		totalProduk += (p.PriceWarehouse - p.Discount)
+	}
+	// Ambil diskon class buyer (persentase)
+	classDiscount := 0.0
+	if order.ClassID != uuid.Nil {
+		class, err := s.classRepo.GetByID(order.ClassID.String())
+		if err == nil {
+			classDiscount = float64(class.Disc)
+		}
+	}
+	diskonClass := totalProduk * classDiscount / 100.0
+	totalSetelahDiskonClass := totalProduk - diskonClass
+	order.TotalPrice = totalProduk
+	order.GrandTotal = totalSetelahDiskonClass // bisa ditambah logika lain jika ada box/tax/diskon
+	_ = s.orderRepo.Update(order)
 
 	return map[string]interface{}{"order_id": order.ID.String(), "product_order_id": po.ID.String()}
 }
@@ -217,7 +264,13 @@ func (s *outboundRegulerService) AddProduct(ctx interface{}) interface{} {
 	return map[string]interface{}{"product_order_id": lastID}
 }
 func (s *outboundRegulerService) DeleteProduct(id string) interface{} {
-	err := s.productOrderRepo.Delete(id)
+
+	// Cek apakah id benar-benar ada di tabel product_orders
+	po, err := s.productOrderRepo.GetByID(id)
+	if err != nil || po == nil {
+		return map[string]interface{}{"error": "Produk order tidak ditemukan"}
+	}
+	err = s.productOrderRepo.Delete(id)
 	if err != nil {
 		return map[string]interface{}{"error": "Gagal menghapus produk"}
 	}
@@ -261,8 +314,8 @@ func (s *outboundRegulerService) UpdateTax(ctx interface{}) interface{} {
 		return map[string]interface{}{"error": "Order tidak ditemukan"}
 	}
 	order.Status = "progress"
-	order.TotalPPN = tax
-	order.GrandTotalAfter = taxValue
+	order.Tax = tax
+	order.TaxValue = taxValue
 	order.IsTax = isTax
 	if err := s.orderRepo.Update(order); err != nil {
 		return map[string]interface{}{"error": "Gagal update tax"}
@@ -281,8 +334,8 @@ func (s *outboundRegulerService) UpdateBox(ctx interface{}) interface{} {
 	if err != nil {
 		return map[string]interface{}{"error": "Order tidak ditemukan"}
 	}
-	order.QuantityCartonBox = totalBox
-	order.CartonBoxPrice = priceBox
+	order.TotalBox = totalBox
+	order.PriceBox = priceBox
 	if err := s.orderRepo.Update(order); err != nil {
 		return map[string]interface{}{"error": "Gagal update box"}
 	}
@@ -298,14 +351,24 @@ func (s *outboundRegulerService) CompleteOrder(ctx interface{}) interface{} {
 	if err != nil {
 		return map[string]interface{}{"error": "Order tidak ditemukan"}
 	}
-	// Hitung total harga produk
+	// Hitung total harga produk (pakai price_warehouse)
 	products, _ := s.productOrderRepo.ListByOrderID(orderID)
 	totalProduk := 0.0
 	for _, p := range products {
-		totalProduk += (p.Price - p.Discount)
+		totalProduk += (p.PriceWarehouse - p.Discount)
 	}
+	// Ambil diskon class buyer (persentase)
+	classDiscount := 0.0
+	if order.ClassID != uuid.Nil {
+		class, err := s.classRepo.GetByID(order.ClassID.String())
+		if err == nil {
+			classDiscount = float64(class.Disc)
+		}
+	}
+	diskonClass := totalProduk * classDiscount / 100.0
+	totalSetelahDiskonClass := totalProduk - diskonClass
 	// Hitung total box
-	totalBox := float64(order.QuantityCartonBox) * order.CartonBoxPrice
+	totalBox := float64(order.TotalBox) * order.PriceBox
 	// Hitung diskon
 	discounts, _ := s.discountOrderRepo.ListByOrderID(orderID)
 	totalDiskon := 0.0
@@ -313,14 +376,17 @@ func (s *outboundRegulerService) CompleteOrder(ctx interface{}) interface{} {
 		if d.IsNominal {
 			totalDiskon += d.ValueNominal
 		} else {
-			totalDiskon += float64(d.ValuePercentage) * totalProduk / 100.0
+			totalDiskon += float64(d.ValuePercentage) * totalSetelahDiskonClass / 100.0
 		}
 	}
 	// Hitung tax
-	totalTax := order.TotalPPN
+	totalTax := 0.0
+	if order.IsTax {
+		totalTax = order.TaxValue
+	}
 	// Grand total
-	grandTotal := totalProduk + totalBox + totalTax - totalDiskon
-	order.GrandTotalAfter = grandTotal
+	grandTotal := totalSetelahDiskonClass + totalBox + totalTax - totalDiskon
+	order.GrandTotal = grandTotal
 	order.Status = "done"
 	if err := s.orderRepo.Update(order); err != nil {
 		return map[string]interface{}{"error": "Gagal update order"}
@@ -339,4 +405,12 @@ func (s *outboundRegulerService) GetOrderDetail(orderID string) interface{} {
 		"products":  products,
 		"discounts": discounts,
 	}
+}
+func (s *outboundRegulerService) ListOrders() interface{} {
+	orders := []models.Order{}
+	err := s.orderRepo.ListAll(&orders)
+	if err != nil {
+		return map[string]interface{}{"error": err.Error()}
+	}
+	return orders
 }
