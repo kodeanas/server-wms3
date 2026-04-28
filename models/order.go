@@ -8,6 +8,7 @@ import (
 )
 
 type Order struct {
+	IsTax               bool           `gorm:"default:false" json:"is_tax"`
 	ID                  uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	Code                string         `gorm:"size:255;not null" json:"code"`
 	UserID              string         `gorm:"type:char(36)" json:"user_id"`
