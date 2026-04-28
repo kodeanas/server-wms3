@@ -17,6 +17,8 @@ func main() {
 
 	if len(os.Args) > 1 && os.Args[1] == "seed" {
 		seed.SeedSticker()
+		seed.SeedCategory()
+		seed.SeedClass()
 		return // keluar setelah seed
 	}
 

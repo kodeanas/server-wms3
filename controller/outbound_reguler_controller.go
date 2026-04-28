@@ -37,6 +37,12 @@ func (ctrl *OutboundRegulerController) ScanProduct(c *gin.Context) {
 		return
 	}
 	res := ctrl.service.ScanProduct(req)
+	if m, ok := res.(map[string]interface{}); ok {
+		if errMsg, exists := m["error"]; exists {
+			utils.SendError(c, http.StatusBadRequest, errMsg.(string))
+			return
+		}
+	}
 	utils.SendSuccess(c, res, "", nil, http.StatusOK)
 }
 
@@ -55,6 +61,12 @@ func (ctrl *OutboundRegulerController) AddProduct(c *gin.Context) {
 func (ctrl *OutboundRegulerController) DeleteProduct(c *gin.Context) {
 	id := c.Param("id")
 	res := ctrl.service.DeleteProduct(id)
+	if m, ok := res.(map[string]interface{}); ok {
+		if errMsg, exists := m["error"]; exists {
+			utils.SendError(c, 404, errMsg.(string))
+			return
+		}
+	}
 	utils.SendSuccess(c, res, "", nil, http.StatusOK)
 }
 
@@ -107,4 +119,10 @@ func (ctrl *OutboundRegulerController) GetOrderDetail(c *gin.Context) {
 	orderID := c.Param("order_id")
 	res := ctrl.service.GetOrderDetail(orderID)
 	utils.SendSuccess(c, res, "", nil, http.StatusOK)
+}
+
+// GET /outbound-reguler/orders
+func (ctrl *OutboundRegulerController) ListOrders(c *gin.Context) {
+	res := ctrl.service.ListOrders()
+	utils.SendSuccess(c, res, "List orders", nil, http.StatusOK)
 }

@@ -286,6 +286,7 @@ func (s *inboundBastService) ScanAndMoveSinglePendingToMaster(documentID, barcod
 		Barcode:          p.Barcode,
 		BarcodeWarehouse: utils.GenerateWarehouseBarcode(),
 		Name:             p.Name,
+		NameWarehouse:    p.Name,
 		Item:             p.Item,
 		ItemWarehouse:    p.Item,
 		Price:            p.Price,

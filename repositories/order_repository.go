@@ -13,6 +13,7 @@ type OrderRepository interface {
 	Delete(id string) error
 	CountDoneByBuyer(buyerID string) (int, error)
 	GetLastDoneByBuyer(buyerID string) (*models.Order, error)
+	ListAll(orders *[]models.Order) error
 }
 
 type orderRepository struct {
@@ -56,4 +57,8 @@ func (r *orderRepository) GetLastDoneByBuyer(buyerID string) (*models.Order, err
 		return nil, err
 	}
 	return &order, nil
+}
+
+func (r *orderRepository) ListAll(orders *[]models.Order) error {
+	return r.db.Order("created_at DESC").Find(orders).Error
 }
