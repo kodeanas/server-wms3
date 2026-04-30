@@ -54,7 +54,7 @@ func SetupRoutes(r *gin.Engine) {
 	wholesaleBagService := services.NewWholesaleBagService(bagRepo, productMasterRepo)
 	userService := services.NewUserService(userRepo)
 	taxService := services.NewTaxService(taxRepo)
-	outboundRegulerService := services.NewOutboundRegulerService(buyerRepo, classRepo, orderRepo, productOrderRepo, discountOrderRepo, categoryRepo, productMasterRepo)
+	outboundRegulerService := services.NewOutboundRegulerService(buyerRepo, classRepo, orderRepo, productOrderRepo, discountOrderRepo, categoryRepo, productMasterRepo, taxRepo)
 
 	// Controllers
 	categoryController := controller.NewCategoryController(categoryService)
