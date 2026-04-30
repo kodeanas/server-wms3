@@ -21,6 +21,7 @@ type OutboundRegulerService interface {
 	CompleteOrder(ctx interface{}) interface{}
 	GetOrderDetail(orderID string) interface{}
 	ListOrders() interface{}
+	DeleteAllDiscountsByOrderID(orderID string) interface{}
 }
 
 type outboundRegulerService struct {
@@ -218,8 +219,26 @@ func (s *outboundRegulerService) ScanProduct(ctx interface{}) interface{} {
 	}
 	diskonClass := totalProduk * classDiscount / 100.0
 	totalSetelahDiskonClass := totalProduk - diskonClass
+	// Hitung diskon (voucher, dsb)
+	discounts, _ := s.discountOrderRepo.ListByOrderID(order.ID.String())
+	totalDiskon := 0.0
+	for _, d := range discounts {
+		if d.IsNominal {
+			totalDiskon += d.Value
+		} else {
+			totalDiskon += float64(d.Usage) * totalSetelahDiskonClass / 100.0
+		}
+	}
+	// Hitung tax value
+	taxValue := 0.0
+	if order.IsTax {
+		taxValue = order.Tax * totalSetelahDiskonClass / 100.0
+	}
+	// Hitung total box
+	totalBoxValue := float64(order.TotalBox) * order.PriceBox
+	// Grand total
 	order.TotalPrice = totalProduk
-	order.GrandTotal = totalSetelahDiskonClass // bisa ditambah logika lain jika ada box/tax/diskon
+	order.GrandTotal = totalSetelahDiskonClass - totalDiskon - taxValue + totalBoxValue
 	_ = s.orderRepo.Update(order)
 
 	return map[string]interface{}{"order_id": order.ID.String(), "product_order_id": po.ID.String()}
@@ -304,6 +323,41 @@ func (s *outboundRegulerService) AddDiscount(ctx interface{}) interface{} {
 	}
 	if err := s.discountOrderRepo.Create(do); err != nil {
 		return map[string]interface{}{"error": "Gagal menambah diskon"}
+	}
+	// Setelah menambah diskon, update grand total order
+	order, err := s.orderRepo.GetByID(orderID)
+	if err == nil && order != nil {
+		// Hitung ulang grand total
+		products, _ := s.productOrderRepo.ListByOrderID(order.ID.String())
+		totalProduk := 0.0
+		for _, p := range products {
+			totalProduk += (p.PriceWarehouse - p.Discount)
+		}
+		classDiscount := 0.0
+		if order.ClassID != uuid.Nil {
+			class, err := s.classRepo.GetByID(order.ClassID.String())
+			if err == nil {
+				classDiscount = float64(class.Disc)
+			}
+		}
+		diskonClass := totalProduk * classDiscount / 100.0
+		totalSetelahDiskonClass := totalProduk - diskonClass
+		discounts, _ := s.discountOrderRepo.ListByOrderID(order.ID.String())
+		totalDiskon := 0.0
+		for _, d := range discounts {
+			if d.IsNominal {
+				totalDiskon += d.Value
+			} else {
+				totalDiskon += float64(d.Usage) * totalSetelahDiskonClass / 100.0
+			}
+		}
+		taxValue := 0.0
+		if order.IsTax {
+			taxValue = order.Tax * totalSetelahDiskonClass / 100.0
+		}
+		totalBoxValue := float64(order.TotalBox) * order.PriceBox
+		order.GrandTotal = totalSetelahDiskonClass - totalDiskon - taxValue + totalBoxValue
+		_ = s.orderRepo.Update(order)
 	}
 	return map[string]interface{}{"discount_order_id": do.ID.String()}
 }
@@ -502,9 +556,7 @@ func (s *outboundRegulerService) CompleteOrder(ctx interface{}) interface{} {
 	}
 	diskonClass := totalProduk * classDiscount / 100.0
 	totalSetelahDiskonClass := totalProduk - diskonClass
-	// Hitung total box
-	totalBoxValue := float64(order.TotalBox) * order.PriceBox
-	// Hitung diskon
+	// Hitung diskon (voucher, dsb)
 	discounts, _ := s.discountOrderRepo.ListByOrderID(orderID)
 	totalDiskon := 0.0
 	for _, d := range discounts {
@@ -514,13 +566,15 @@ func (s *outboundRegulerService) CompleteOrder(ctx interface{}) interface{} {
 			totalDiskon += float64(d.Usage) * totalSetelahDiskonClass / 100.0
 		}
 	}
-	// Hitung tax
-	totalTax := 0.0
+	// Hitung tax value
+	taxValue := 0.0
 	if order.IsTax {
-		totalTax = order.TaxValue
+		taxValue = order.Tax * totalSetelahDiskonClass / 100.0
 	}
+	// Hitung total box
+	totalBoxValue := float64(order.TotalBox) * order.PriceBox
 	// Grand total: dikurangi tax, dikurangi voucher/diskon, ditambah box
-	grandTotal := totalSetelahDiskonClass - totalDiskon - totalTax + totalBoxValue
+	grandTotal := totalSetelahDiskonClass - totalDiskon - taxValue + totalBoxValue
 	order.GrandTotal = grandTotal
 	order.Status = "done"
 	if err := s.orderRepo.Update(order); err != nil {
@@ -548,4 +602,45 @@ func (s *outboundRegulerService) ListOrders() interface{} {
 		return map[string]interface{}{"error": err.Error()}
 	}
 	return orders
+}
+
+// Delete all discounts/vouchers for an order and recalculate grand total
+func (s *outboundRegulerService) DeleteAllDiscountsByOrderID(orderID string) interface{} {
+	// Get all discounts for the order
+	discounts, err := s.discountOrderRepo.ListByOrderID(orderID)
+	if err != nil {
+		return map[string]interface{}{"error": "Gagal mengambil daftar voucher/discount"}
+	}
+	for _, d := range discounts {
+		_ = s.discountOrderRepo.Delete(d.ID.String())
+	}
+	// Recalculate grand total
+	order, err := s.orderRepo.GetByID(orderID)
+	if err != nil || order == nil {
+		return map[string]interface{}{"error": "Order tidak ditemukan"}
+	}
+	products, _ := s.productOrderRepo.ListByOrderID(order.ID.String())
+	totalProduk := 0.0
+	for _, p := range products {
+		totalProduk += (p.PriceWarehouse - p.Discount)
+	}
+	classDiscount := 0.0
+	if order.ClassID != uuid.Nil {
+		class, err := s.classRepo.GetByID(order.ClassID.String())
+		if err == nil {
+			classDiscount = float64(class.Disc)
+		}
+	}
+	diskonClass := totalProduk * classDiscount / 100.0
+	totalSetelahDiskonClass := totalProduk - diskonClass
+	// No discounts left
+	totalDiskon := 0.0
+	taxValue := 0.0
+	if order.IsTax {
+		taxValue = order.Tax * totalSetelahDiskonClass / 100.0
+	}
+	totalBoxValue := float64(order.TotalBox) * order.PriceBox
+	order.GrandTotal = totalSetelahDiskonClass - totalDiskon - taxValue + totalBoxValue
+	_ = s.orderRepo.Update(order)
+	return map[string]interface{}{"success": true, "grand_total": order.GrandTotal}
 }

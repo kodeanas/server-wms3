@@ -201,6 +201,7 @@ func SetupRoutes(r *gin.Engine) {
 		api.POST("/outbound-reguler/product", outboundRegulerController.AddProduct)
 		api.DELETE("/outbound-reguler/product/:id", outboundRegulerController.DeleteProduct)
 		api.POST("/outbound-reguler/discount", outboundRegulerController.AddDiscount)
+		api.DELETE("/outbound-reguler/discount/order/:order_id", outboundRegulerController.DeleteAllDiscountsByOrderID)
 		api.PATCH("/outbound-reguler/tax", outboundRegulerController.UpdateTax)
 		api.PATCH("/outbound-reguler/box", outboundRegulerController.UpdateBox)
 		api.POST("/outbound-reguler/complete", outboundRegulerController.CompleteOrder)

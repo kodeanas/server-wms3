@@ -78,6 +78,12 @@ func (ctrl *OutboundRegulerController) AddDiscount(c *gin.Context) {
 		return
 	}
 	res := ctrl.service.AddDiscount(req)
+	if resMap, ok := res.(map[string]interface{}); ok {
+		if errMsg, exists := resMap["error"]; exists {
+			utils.SendError(c, http.StatusBadRequest, errMsg.(string))
+			return
+		}
+	}
 	utils.SendSuccess(c, res, "", nil, http.StatusOK)
 }
 
@@ -89,6 +95,12 @@ func (ctrl *OutboundRegulerController) UpdateTax(c *gin.Context) {
 		return
 	}
 	res := ctrl.service.UpdateTax(req)
+	if resMap, ok := res.(map[string]interface{}); ok {
+		if errMsg, exists := resMap["error"]; exists {
+			utils.SendError(c, http.StatusBadRequest, errMsg.(string))
+			return
+		}
+	}
 	utils.SendSuccess(c, res, "", nil, http.StatusOK)
 }
 
@@ -100,6 +112,12 @@ func (ctrl *OutboundRegulerController) UpdateBox(c *gin.Context) {
 		return
 	}
 	res := ctrl.service.UpdateBox(req)
+	if resMap, ok := res.(map[string]interface{}); ok {
+		if errMsg, exists := resMap["error"]; exists {
+			utils.SendError(c, http.StatusBadRequest, errMsg.(string))
+			return
+		}
+	}
 	utils.SendSuccess(c, res, "", nil, http.StatusOK)
 }
 
@@ -118,6 +136,12 @@ func (ctrl *OutboundRegulerController) CompleteOrder(c *gin.Context) {
 func (ctrl *OutboundRegulerController) GetOrderDetail(c *gin.Context) {
 	orderID := c.Param("order_id")
 	res := ctrl.service.GetOrderDetail(orderID)
+	if resMap, ok := res.(map[string]interface{}); ok {
+		if errMsg, exists := resMap["error"]; exists {
+			utils.SendError(c, http.StatusBadRequest, errMsg.(string))
+			return
+		}
+	}
 	utils.SendSuccess(c, res, "", nil, http.StatusOK)
 }
 
@@ -125,4 +149,17 @@ func (ctrl *OutboundRegulerController) GetOrderDetail(c *gin.Context) {
 func (ctrl *OutboundRegulerController) ListOrders(c *gin.Context) {
 	res := ctrl.service.ListOrders()
 	utils.SendSuccess(c, res, "List orders", nil, http.StatusOK)
+}
+
+// DELETE /outbound-reguler/discount/order/:order_id
+func (ctrl *OutboundRegulerController) DeleteAllDiscountsByOrderID(c *gin.Context) {
+	orderID := c.Param("order_id")
+	res := ctrl.service.DeleteAllDiscountsByOrderID(orderID)
+	if m, ok := res.(map[string]interface{}); ok {
+		if errMsg, exists := m["error"]; exists {
+			utils.SendError(c, 404, errMsg.(string))
+			return
+		}
+	}
+	utils.SendSuccess(c, res, "Voucher/discount berhasil dihapus", nil, http.StatusOK)
 }
