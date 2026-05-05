@@ -19,3 +19,20 @@ type User struct {
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
+
+type CreateUserPayload struct {
+	Name     string `json:"name" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	Phone    string `json:"phone" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Status   bool   `json:"status"`
+	Role     string `json:"role"`
+}
+
+type UpdateUserPayload struct {
+	Name   string `json:"name"`
+	Email  string `json:"email"`
+	Phone  string `json:"phone"`
+	Status bool   `json:"status"`
+	Role   string `json:"role"`
+}

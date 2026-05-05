@@ -20,3 +20,23 @@ type Class struct {
 	UpdatedAt           time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
+
+type CreateClassPayload struct {
+	Name                string  `json:"name" binding:"required"`
+	MinOrder            int     `json:"min_order" binding:"required"`
+	Disc                int     `json:"disc"`
+	MinTransactionValue float64 `json:"min_transaction_value" binding:"required"`
+	Week                int     `json:"week"`
+	Iteration           int     `json:"iteration"`
+	Status              string  `json:"status"`
+}
+
+type UpdateClassPayload struct {
+	Name                string  `json:"name"`
+	MinOrder            int     `json:"min_order"`
+	Disc                int     `json:"disc"`
+	MinTransactionValue float64 `json:"min_transaction_value"`
+	Week                int     `json:"week"`
+	Iteration           int     `json:"iteration"`
+	Status              string  `json:"status"`
+}

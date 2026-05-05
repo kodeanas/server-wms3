@@ -17,111 +17,89 @@ import (
 // SetupRoutes menginisialisasi semua endpoint pada router yang diberikan.
 // ini di-set di sini karena akan semakin banyak resource.
 func SetupRoutes(r *gin.Engine) {
-	// Repositories
+	// Category
 	categoryRepo := repositories.NewCategoryRepository(config.DB)
+	categoryService := services.NewCategoryService(categoryRepo)
+	categoryController := controller.NewCategoryController(categoryService)
+
+	//Sticker
 	stickerRepo := repositories.NewStickerRepository(config.DB)
-	buyerRepo := repositories.NewBuyerRepository(config.DB)
+	stickerService := services.NewStickerService(stickerRepo)
+	stickerController := controller.NewStickerController(stickerService)
+
+	//Class
 	classRepo := repositories.NewClassRepository(config.DB)
-	productMasterRepo := repositories.NewProductMasterRepository(config.DB)
+	classService := services.NewClassService(classRepo)
+	classController := controller.NewClassController(classService)
+
+	//Buyer
+	buyerRepo := repositories.NewBuyerRepository(config.DB)
+	buyerService := services.NewBuyerService(buyerRepo, classRepo)
+	buyerController := controller.NewBuyerController(buyerService)
+
+	//User
+	userRepo := repositories.NewUserRepository(config.DB)
+	userService := services.NewUserService(userRepo)
+	userController := controller.NewUserController(userService)
+
+	//Tax
+	taxRepo := repositories.NewTaxRepository(config.DB)
+	taxService := services.NewTaxService(taxRepo)
+	taxController := controller.NewTaxController(taxService)
+
+	//Product Document
 	productDocumentRepo := repositories.NewProductDocumentRepository(config.DB)
+	productDocumentService := services.NewProductDocumentService(productDocumentRepo)
+	productDocumentController := controller.NewProductDocumentController(productDocumentService)
+
+	//Product Master
+	productMasterRepo := repositories.NewProductMasterRepository(config.DB)
+	productMasterService := services.NewProductMasterService(productMasterRepo)
+	productMasterController := controller.NewProductMasterController(productMasterService)
+
+	//Product Master Summary
+	productMasterSummaryService := services.NewProductMasterSummaryService(productMasterRepo)
+	productMasterSummaryController := controller.NewProductMasterSummaryController(productMasterSummaryService)
+
+	//Product Pending & Product Repair
 	productPendingRepo := repositories.NewProductPendingRepository(config.DB)
 	productRepairRepo := repositories.NewProductRepairRepository(config.DB)
+
+	//Inbound SKU
+	inboundSKUService := services.NewInboundSKUService(productDocumentRepo, productPendingRepo, productRepairRepo, productMasterRepo)
+	inboundSKUController := controller.NewInboundSKUController(inboundSKUService)
+
+	//RackDisplay
 	rackDisplayRepo := repositories.NewRackDisplayRepository(config.DB)
-	rackStagingRepo := repositories.NewRackStagingRepository(config.DB)
+	rackDisplayService := services.NewRackDisplayService(rackDisplayRepo)
+	rackDisplayController := controller.NewRackDisplayController(rackDisplayService)
+
+	//RWholesale Bag
 	bagRepo := repositories.NewBagRepository(config.DB)
-	userRepo := repositories.NewUserRepository(config.DB)
-	taxRepo := repositories.NewTaxRepository(config.DB)
+	BagService := services.NewWholesaleBagService(bagRepo, productMasterRepo)
+	BagController := controller.NewWholesaleBagController(BagService)
+
+	//Rack Staging Reguler
+	rackStagingRepo := repositories.NewRackStagingRepository(config.DB)
+	rackStagingRegulerService := services.NewRackStagingService(rackStagingRepo, rackDisplayRepo)
+	rackStagingRegulerController := controller.NewRackStagingController(rackStagingRegulerService)
+
+	//Rack Staging Sticker
+	rackStagingStickerService := services.NewRackStagingStickerService(bagRepo, productMasterRepo)
+	rackStagingStickerController := controller.NewRackStagingStickerController(rackStagingStickerService)
+
+	//Order ,ProductOrder , DiscountOrder
 	orderRepo := repositories.NewOrderRepository(config.DB)
 	productOrderRepo := repositories.NewProductOrderRepository(config.DB)
 	discountOrderRepo := repositories.NewDiscountOrderRepository(config.DB)
-	// TODO: Tambahkan repository product_pending dan product_repair jika sudah ada
-	// productPendingRepo := repositories.NewProductPendingRepository(config.DB)
-	// productRepairRepo := repositories.NewProductRepairRepository(config.DB)
 
-	// Services
-	categoryService := services.NewCategoryService(categoryRepo)
-	stickerService := services.NewStickerService(stickerRepo)
-	buyerService := services.NewBuyerService(buyerRepo, classRepo)
-	classService := services.NewClassService(classRepo)
-	productMasterService := services.NewProductMasterService(productMasterRepo)
-	productDocumentService := services.NewProductDocumentService(productDocumentRepo)
-	productMasterSummaryService := services.NewProductMasterSummaryService(productMasterRepo)
-	// Inbound SKU Service
-	inboundSKUService := services.NewInboundSKUService(productDocumentRepo, productPendingRepo, productRepairRepo, productMasterRepo)
-	rackDisplayService := services.NewRackDisplayService(rackDisplayRepo)
-	rackStagingService := services.NewRackStagingService(rackStagingRepo, rackDisplayRepo)
-	rackStagingStickerService := services.NewRackStagingStickerService(bagRepo, productMasterRepo)
-	wholesaleBagService := services.NewWholesaleBagService(bagRepo, productMasterRepo)
-	userService := services.NewUserService(userRepo)
-	taxService := services.NewTaxService(taxRepo)
+	// Outbound Reguler
 	outboundRegulerService := services.NewOutboundRegulerService(buyerRepo, classRepo, orderRepo, productOrderRepo, discountOrderRepo, categoryRepo, productMasterRepo, taxRepo)
-
-	// Controllers
-	categoryController := controller.NewCategoryController(categoryService)
-	stickerController := controller.NewStickerController(stickerService)
-	buyerController := controller.NewBuyerController(buyerService)
-	classController := controller.NewClassController(classService)
-	productMasterController := controller.NewProductMasterController(productMasterService)
-	productDocumentController := controller.NewProductDocumentController(productDocumentService)
-	productMasterSummaryController := controller.NewProductMasterSummaryController(productMasterSummaryService)
-	inboundSKUController := controller.NewInboundSKUController(inboundSKUService)
-	rackDisplayController := controller.NewRackDisplayController(rackDisplayService)
-	rackStagingController := controller.NewRackStagingController(rackStagingService)
-	rackStagingStickerController := controller.NewRackStagingStickerController(rackStagingStickerService)
-	wholesaleBagController := controller.NewWholesaleBagController(wholesaleBagService)
-	userController := controller.NewUserController(userService)
-	taxController := controller.NewTaxController(taxService)
 	outboundRegulerController := controller.NewOutboundRegulerController(outboundRegulerService)
 
 	// Public API
 	api := r.Group("/api")
 	{
-
-		// Taxes
-		api.POST("/taxes", taxController.Create)
-		api.GET("/taxes", taxController.List)
-		api.GET("/taxes/:id", taxController.GetByID)
-		api.PUT("/taxes/:id", taxController.Update)
-		api.DELETE("/taxes/:id", taxController.Delete)
-		api.GET("/taxes-active", taxController.GetActive)
-
-		// Users
-		api.POST("/users", userController.CreateUser)
-		api.GET("/users", userController.ListUsers)
-		api.GET("/users/:id", userController.GetUserByID)
-		api.POST("/users/:id", userController.UpdateUser)
-		api.DELETE("/users/:id", userController.DeleteUser)
-		api.POST("/users/:id/password", userController.UpdatePassword)
-
-		// Rack Displays
-		api.POST("/rack-displays", rackDisplayController.Create)
-		api.GET("/rack-displays", rackDisplayController.GetAll)
-		api.GET("/rack-displays/:id/detail", rackDisplayController.GetDetail)
-		api.PUT("/rack-displays/:id", rackDisplayController.Update)
-		api.DELETE("/rack-displays/:id", rackDisplayController.Delete)
-
-		// Rack Stagings Reguler
-		api.GET("/rack-stagings", rackStagingController.ListAll)
-		api.GET("/rack-stagings/:rackStagingID", rackStagingController.GetDetail)
-		api.POST("/rack-stagings", rackStagingController.Create)
-		api.GET("/rack-stagings/:rackStagingID/products", productMasterController.ListByRackStagingID)
-		api.POST("/rack-stagings/:rackStagingID/scanner/scan-barcode", productMasterController.ScanBarcodeWarehouse)
-		api.POST("/rack-stagings/:rackStagingID/finish", rackStagingController.Finish)
-
-		// Rack Staging Sticker (Bag)
-		api.POST("/rack-stagings-sticker", rackStagingStickerController.Create)
-		api.GET("/rack-stagings-sticker", rackStagingStickerController.List)
-		api.GET("/rack-stagings-sticker/:id", rackStagingStickerController.GetDetail)
-		api.GET("/rack-stagings-sticker/:id/products", rackStagingStickerController.ListByBagID)
-		api.POST("/rack-stagings-sticker/:id/scanner/scan-barcode", rackStagingStickerController.ScanBarcodeWarehouse)
-
-		// Wholesale Bag
-		api.POST("/wholesale-bags", wholesaleBagController.Create)
-		api.GET("/wholesale-bags", wholesaleBagController.List)
-		api.GET("/wholesale-bags/:bagID/detail", wholesaleBagController.GetDetail)
-		api.GET("/wholesale-bags/:bagID/products", wholesaleBagController.ListByBagID)
-		api.POST("/wholesale-bags/:bagID/scanner/scan-barcode", wholesaleBagController.ScanBarcodeWarehouse)
-
 		// Categories
 		api.POST("/categories", categoryController.CreateCategory)
 		api.GET("/categories", categoryController.ListCategories)
@@ -152,6 +130,22 @@ func SetupRoutes(r *gin.Engine) {
 		api.PUT("/classes/:id/up", classController.MoveUp)
 		api.PUT("/classes/:id/down", classController.MoveDown)
 
+		// Taxes
+		api.POST("/taxes", taxController.Create)
+		api.GET("/taxes", taxController.List)
+		api.GET("/taxes/:id", taxController.GetByID)
+		api.PUT("/taxes/:id", taxController.Update)
+		api.DELETE("/taxes/:id", taxController.Delete)
+		api.GET("/taxes-active", taxController.GetActive)
+
+		// Users
+		api.POST("/users", userController.CreateUser)
+		api.GET("/users", userController.ListUsers)
+		api.GET("/users/:id", userController.GetUserByID)
+		api.PUT("/users/:id", userController.UpdateUser)
+		api.DELETE("/users/:id", userController.DeleteUser)
+		api.PUT("/users/:id/password", userController.UpdatePassword)
+
 		// Inbound Manual
 		api.GET("/inbound/list-masters", controller.ListAllProductMastersHandler(config.DB))
 		api.GET("/inbound/list-pendings", controller.ListAllProductPendingsHandler(config.DB))
@@ -168,6 +162,35 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/inbound/bast-scanner/:document_id/product/:barcode", controller.InboundBastGetPendingProductHandler(config.DB))
 		api.POST("/inbound/bast-scanner/:document_id/scan/:barcode", controller.InboundBastScanSingleProductHandler(config.DB))
 		api.POST("/inbound/bast-scanner/:document_id/finish", productDocumentController.FinishDocument)
+
+		// Rack Displays
+		api.POST("/rack-displays", rackDisplayController.Create)
+		api.GET("/rack-displays", rackDisplayController.GetAll)
+		api.GET("/rack-displays/:id/detail", rackDisplayController.GetDetail)
+		api.PUT("/rack-displays/:id", rackDisplayController.Update)
+		api.DELETE("/rack-displays/:id", rackDisplayController.Delete)
+
+		// Rack Stagings Reguler
+		api.GET("/rack-stagings", rackStagingRegulerController.ListAll)
+		api.GET("/rack-stagings/:rackStagingID", rackStagingRegulerController.GetDetail)
+		api.POST("/rack-stagings", rackStagingRegulerController.Create)
+		api.GET("/rack-stagings/:rackStagingID/products", productMasterController.ListByRackStagingID)
+		api.POST("/rack-stagings/:rackStagingID/scanner/scan-barcode", productMasterController.ScanBarcodeWarehouse)
+		api.POST("/rack-stagings/:rackStagingID/finish", rackStagingRegulerController.Finish)
+
+		// Rack Staging Sticker (Bag)
+		api.POST("/rack-stagings-sticker", rackStagingStickerController.Create)
+		api.GET("/rack-stagings-sticker", rackStagingStickerController.List)
+		api.GET("/rack-stagings-sticker/:id", rackStagingStickerController.GetDetail)
+		api.GET("/rack-stagings-sticker/:id/products", rackStagingStickerController.ListByBagID)
+		api.POST("/rack-stagings-sticker/:id/scanner/scan-barcode", rackStagingStickerController.ScanBarcodeWarehouse)
+
+		// Wholesale Bag
+		api.POST("/wholesale-bags", BagController.Create)
+		api.GET("/wholesale-bags", BagController.List)
+		api.GET("/wholesale-bags/:bagID/detail", BagController.GetDetail)
+		api.GET("/wholesale-bags/:bagID/products", BagController.ListByBagID)
+		api.POST("/wholesale-bags/:bagID/scanner/scan-barcode", BagController.ScanBarcodeWarehouse)
 
 		// Product Master Staging Reguler
 		api.GET("/product-masters/staging-reguler", productMasterController.ListStagingReguler)

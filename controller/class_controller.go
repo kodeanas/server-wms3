@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"wms/models"
 	"wms/services"
 	"wms/utils"
 
@@ -21,7 +22,7 @@ func NewClassController(service services.ClassService) *ClassController {
 
 // CreateClass endpoint.
 func (ctrl *ClassController) CreateClass(c *gin.Context) {
-	var payload services.CreateClassPayload
+	var payload models.CreateClassPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		validationErrors := []utils.ErrorItem{{Field: "", Message: err.Error()}}
 		utils.SendValidationError(c, validationErrors)
@@ -88,7 +89,7 @@ func (ctrl *ClassController) ListClasses(c *gin.Context) {
 // UpdateClass endpoint.
 func (ctrl *ClassController) UpdateClass(c *gin.Context) {
 	id := c.Param("id")
-	var payload services.UpdateClassPayload
+	var payload models.UpdateClassPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		validationErrors := []utils.ErrorItem{{Field: "", Message: err.Error()}}
 		utils.SendValidationError(c, validationErrors)

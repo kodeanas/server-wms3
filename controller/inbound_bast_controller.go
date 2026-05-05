@@ -196,5 +196,3 @@ func InboundBastScanSingleProductHandler(db *gorm.DB) gin.HandlerFunc {
 		}, "OK", nil, http.StatusOK)
 	}
 }
-
-// 4. Endpoint untuk ambil list dokumen BAST

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"wms/models"
 	"wms/services"
 	"wms/utils"
 
@@ -20,7 +21,7 @@ func NewBuyerController(service services.BuyerService) *BuyerController {
 
 // CreateBuyer endpoint.
 func (ctrl *BuyerController) CreateBuyer(c *gin.Context) {
-	var payload services.CreateBuyerPayload
+	var payload models.CreateBuyerPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		validationErrors := []utils.ErrorItem{{Field: "", Message: err.Error()}}
 		utils.SendValidationError(c, validationErrors)
@@ -61,7 +62,7 @@ func (ctrl *BuyerController) ListBuyers(c *gin.Context) {
 // UpdateBuyer endpoint.
 func (ctrl *BuyerController) UpdateBuyer(c *gin.Context) {
 	id := c.Param("id")
-	var payload services.UpdateBuyerPayload
+	var payload models.UpdateBuyerPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		validationErrors := []utils.ErrorItem{{Field: "", Message: err.Error()}}
 		utils.SendValidationError(c, validationErrors)

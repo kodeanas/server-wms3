@@ -7,10 +7,10 @@ import (
 )
 
 type UserService interface {
-	CreateUser(input CreateUserPayload) (*models.User, error)
+	CreateUser(input models.CreateUserPayload) (*models.User, error)
 	GetUserByID(id string) (*models.User, error)
 	ListUsers() ([]models.User, error)
-	UpdateUser(id string, input UpdateUserPayload) (*models.User, error)
+	UpdateUser(id string, input models.UpdateUserPayload) (*models.User, error)
 	DeleteUser(id string) error
 	UpdatePassword(id string, password string) error
 }
@@ -23,24 +23,7 @@ func NewUserService(repo repositories.UserRepository) UserService {
 	return &userService{repo: repo}
 }
 
-type CreateUserPayload struct {
-	Name     string `json:"name" binding:"required"`
-	Email    string `json:"email" binding:"required"`
-	Phone    string `json:"phone" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Status   bool   `json:"status"`
-	Role     string `json:"role"`
-}
-
-type UpdateUserPayload struct {
-	Name   string `json:"name"`
-	Email  string `json:"email"`
-	Phone  string `json:"phone"`
-	Status bool   `json:"status"`
-	Role   string `json:"role"`
-}
-
-func (s *userService) CreateUser(input CreateUserPayload) (*models.User, error) {
+func (s *userService) CreateUser(input models.CreateUserPayload) (*models.User, error) {
 	user := &models.User{
 		Name:      input.Name,
 		Email:     input.Email,
@@ -65,7 +48,7 @@ func (s *userService) ListUsers() ([]models.User, error) {
 	return s.repo.List()
 }
 
-func (s *userService) UpdateUser(id string, input UpdateUserPayload) (*models.User, error) {
+func (s *userService) UpdateUser(id string, input models.UpdateUserPayload) (*models.User, error) {
 	user, err := s.repo.GetByID(id)
 	if err != nil {
 		return nil, err
