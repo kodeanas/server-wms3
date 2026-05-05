@@ -18,3 +18,21 @@ type Buyer struct {
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
+
+// CreateBuyerPayload request payload.
+type CreateBuyerPayload struct {
+	Name    string `json:"name" binding:"required"`
+	Email   string `json:"email"`
+	Phone   string `json:"phone"`
+	ClassID string `json:"class_id"`
+	Address string `json:"address"`
+}
+
+// UpdateBuyerPayload request payload for update.
+type UpdateBuyerPayload struct {
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+	Phone   string `json:"phone"`
+	ClassID string `json:"class_id"`
+	Address string `json:"address"`
+}

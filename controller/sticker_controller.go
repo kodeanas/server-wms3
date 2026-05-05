@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"wms/models"
 	"wms/services"
 	"wms/utils"
 
@@ -20,7 +21,7 @@ func NewStickerController(service services.StickerService) *StickerController {
 
 // CreateSticker endpoint.
 func (ctrl *StickerController) CreateSticker(c *gin.Context) {
-	var payload services.CreateStickerPayload
+	var payload models.CreateStickerPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		validationErrors := []utils.ErrorItem{{Field: "", Message: err.Error()}}
 		utils.SendValidationError(c, validationErrors)
@@ -64,7 +65,7 @@ func (ctrl *StickerController) ListStickers(c *gin.Context) {
 func (ctrl *StickerController) UpdateSticker(c *gin.Context) {
 	id := c.Param("id")
 
-	var payload services.UpdateStickerPayload
+	var payload models.UpdateStickerPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		validationErrors := []utils.ErrorItem{{Field: "", Message: err.Error()}}
 		utils.SendValidationError(c, validationErrors)

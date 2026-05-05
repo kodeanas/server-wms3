@@ -14,37 +14,15 @@ import (
 
 // StickerService defines business logic for stickers.
 type StickerService interface {
-	CreateSticker(input CreateStickerPayload) (*models.Sticker, error)
+	CreateSticker(input models.CreateStickerPayload) (*models.Sticker, error)
 	GetStickerBySlug(slug string) (*models.Sticker, error)
 	GetStickerByID(id string) (*models.Sticker, error)
 	ListStickers() ([]models.Sticker, error)
-	UpdateSticker(id string, input UpdateStickerPayload) (*models.Sticker, error)
+	UpdateSticker(id string, input models.UpdateStickerPayload) (*models.Sticker, error)
 	DeleteSticker(id string) error
 }
 
-// CreateStickerPayload request payload.
-type CreateStickerPayload struct {
-	CodeHex    string   `json:"code_hex" binding:"required"`
-	Name       string   `json:"name" binding:"required"`
-	Slug       string   `json:"slug"`
-	Type       string   `json:"type"`
-	FixedPrice *int     `json:"fixed_price"`
-	MinPrice   *float64 `json:"min_price"`
-	MaxPrice   *float64 `json:"max_price"`
-	Status     string   `json:"status"`
-}
-
-// UpdateStickerPayload request payload for update.
-type UpdateStickerPayload struct {
-	CodeHex    string   `json:"code_hex"`
-	Name       string   `json:"name"`
-	Slug       string   `json:"slug"`
-	Type       string   `json:"type"`
-	FixedPrice *int     `json:"fixed_price"`
-	MinPrice   *float64 `json:"min_price"`
-	MaxPrice   *float64 `json:"max_price"`
-	Status     string   `json:"status"`
-}
+// ...payloads moved to models/sticker.go...
 
 type stickerService struct {
 	repo repositories.StickerRepository
@@ -53,14 +31,6 @@ type stickerService struct {
 // NewStickerService constructor.
 func NewStickerService(repo repositories.StickerRepository) StickerService {
 	return &stickerService{repo: repo}
-}
-
-// generateSlugFromName converts name to slug format (lowercase with dashes)
-func (s *stickerService) generateSlugFromName(name string) string {
-	slug := strings.ToLower(strings.TrimSpace(name))
-	slug = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(slug, "-")
-	slug = strings.Trim(slug, "-")
-	return slug
 }
 
 // generateUniqueSlug generates a unique slug by checking existing ones
@@ -99,7 +69,7 @@ func (s *stickerService) generateUniqueSlug(baseSlug string) (string, error) {
 	return newSlug, nil
 }
 
-func (s *stickerService) CreateSticker(input CreateStickerPayload) (*models.Sticker, error) {
+func (s *stickerService) CreateSticker(input models.CreateStickerPayload) (*models.Sticker, error) {
 	// Validation
 	if strings.TrimSpace(input.CodeHex) == "" {
 		return nil, errors.New("code_hex is required")
@@ -178,7 +148,7 @@ func (s *stickerService) ListStickers() ([]models.Sticker, error) {
 	return s.repo.List()
 }
 
-func (s *stickerService) UpdateSticker(id string, input UpdateStickerPayload) (*models.Sticker, error) {
+func (s *stickerService) UpdateSticker(id string, input models.UpdateStickerPayload) (*models.Sticker, error) {
 	sticker, err := s.repo.GetByID(id)
 	if err != nil {
 		return nil, errors.New("sticker not found")
@@ -269,4 +239,12 @@ func (s *stickerService) DeleteSticker(id string) error {
 		return errors.New("sticker not found")
 	}
 	return s.repo.Delete(id)
+}
+
+// generateSlugFromName converts name to slug format (lowercase with dashes)
+func (s *stickerService) generateSlugFromName(name string) string {
+	slug := strings.ToLower(strings.TrimSpace(name))
+	slug = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(slug, "-")
+	slug = strings.Trim(slug, "-")
+	return slug
 }

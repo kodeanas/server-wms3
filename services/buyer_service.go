@@ -28,29 +28,11 @@ type ClassWithDecimal struct {
 
 // BuyerService defines business logic for buyers.
 type BuyerService interface {
-	CreateBuyer(input CreateBuyerPayload) (*models.Buyer, error)
+	CreateBuyer(input models.CreateBuyerPayload) (*models.Buyer, error)
 	GetBuyerByID(id string) (*models.Buyer, error)
 	ListBuyers() ([]BuyerWithClass, error)
-	UpdateBuyer(id string, input UpdateBuyerPayload) (*models.Buyer, error)
+	UpdateBuyer(id string, input models.UpdateBuyerPayload) (*models.Buyer, error)
 	DeleteBuyer(id string) error
-}
-
-// CreateBuyerPayload request payload.
-type CreateBuyerPayload struct {
-	Name    string `json:"name" binding:"required"`
-	Email   string `json:"email"`
-	Phone   string `json:"phone"`
-	ClassID string `json:"class_id"`
-	Address string `json:"address"`
-}
-
-// UpdateBuyerPayload request payload for update.
-type UpdateBuyerPayload struct {
-	Name    string `json:"name"`
-	Email   string `json:"email"`
-	Phone   string `json:"phone"`
-	ClassID string `json:"class_id"`
-	Address string `json:"address"`
 }
 
 type buyerService struct {
@@ -63,7 +45,7 @@ func NewBuyerService(repo repositories.BuyerRepository, classRepo repositories.C
 	return &buyerService{repo: repo, classRepo: classRepo}
 }
 
-func (s *buyerService) CreateBuyer(input CreateBuyerPayload) (*models.Buyer, error) {
+func (s *buyerService) CreateBuyer(input models.CreateBuyerPayload) (*models.Buyer, error) {
 	buyer := &models.Buyer{
 		ID:      uuid.New(),
 		Name:    input.Name,
@@ -117,7 +99,7 @@ func (s *buyerService) ListBuyers() ([]BuyerWithClass, error) {
 	return result, nil
 }
 
-func (s *buyerService) UpdateBuyer(id string, input UpdateBuyerPayload) (*models.Buyer, error) {
+func (s *buyerService) UpdateBuyer(id string, input models.UpdateBuyerPayload) (*models.Buyer, error) {
 	buyer, err := s.repo.GetByID(id)
 	if err != nil {
 		return nil, err

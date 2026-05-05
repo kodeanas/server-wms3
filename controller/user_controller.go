@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"wms/models"
 	"wms/services"
 	"wms/utils"
 
@@ -17,7 +18,7 @@ func NewUserController(service services.UserService) *UserController {
 }
 
 func (ctrl *UserController) CreateUser(c *gin.Context) {
-	var payload services.CreateUserPayload
+	var payload models.CreateUserPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		utils.SendValidationError(c, []utils.ErrorItem{{Field: "", Message: err.Error()}})
 		return
@@ -51,7 +52,7 @@ func (ctrl *UserController) ListUsers(c *gin.Context) {
 
 func (ctrl *UserController) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
-	var payload services.UpdateUserPayload
+	var payload models.UpdateUserPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		utils.SendValidationError(c, []utils.ErrorItem{{Field: "", Message: err.Error()}})
 		return
