@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	dto "wms/dto/response"
 	"wms/models"
 	"wms/services"
 	"wms/utils"
@@ -55,8 +56,29 @@ func (ctrl *BuyerController) ListBuyers(c *gin.Context) {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
-	// Contoh meta kosong, bisa diisi pagination jika ada
-	utils.SendSuccess(c, buyers, "", nil, http.StatusOK)
+	var resp []dto.BuyerResponse
+	for _, b := range buyers {
+		var class *dto.ClassSimpleResponse
+		if b.Class != nil {
+			class = &dto.ClassSimpleResponse{
+				ID:   b.Class.ID,
+				Name: b.Class.Name,
+			}
+		}
+		resp = append(resp, dto.BuyerResponse{
+			ID:        b.ID.String(),
+			Name:      b.Name,
+			Email:     b.Email,
+			Phone:     b.Phone,
+			ClassID:   b.ClassID,
+			Address:   b.Address,
+			CreatedAt: b.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt: b.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			DeletedAt: b.DeletedAt,
+			Class:     class,
+		})
+	}
+	utils.SendSuccess(c, resp, "", nil, http.StatusOK)
 }
 
 // UpdateBuyer endpoint.

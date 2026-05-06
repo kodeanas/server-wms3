@@ -136,7 +136,6 @@ func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (
 		PriceWarehouse:   priceWarehouse,
 		CategoryID:       categoryID,
 		StickerID:        stickerID,
-		TypeID:           typeID,
 		TypeOut:          nil,
 	}
 
