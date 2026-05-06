@@ -14,6 +14,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// Tambahkan variabel global untuk service
+var inboundService = services.NewInboundService(nil)
+
 func ListAllProductMastersHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var masters []models.ProductMaster
@@ -35,17 +38,6 @@ func ListAllProductPendingsHandler(db *gorm.DB) gin.HandlerFunc {
 		utils.SendSuccess(c, pendings, "List pending data", nil, http.StatusOK)
 	}
 }
-
-// func ListProductManualHandler(db *gorm.DB) gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		var manuals []models.ProductPending
-// 		if err := db.Order("created_at DESC").Find(&manuals).Error; err != nil {
-// 			utils.SendError(c, 500, err.Error())
-// 			return
-// 		}
-// 		utils.SendSuccess(c, manuals, "List manual data", nil, http.StatusOK)
-// 	}
-// }
 
 func ListProductManualHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -95,9 +87,6 @@ func ListProductManualHandler(db *gorm.DB) gin.HandlerFunc {
 		utils.SendSuccess(c, results, "List manual data", nil, http.StatusOK)
 	}
 }
-
-// Tambahkan variabel global untuk service
-var inboundService = services.NewInboundService(nil)
 
 func InboundManualHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {

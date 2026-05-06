@@ -32,16 +32,16 @@ func (s *inboundService) GetManualInboundList() ([]models.ProductPending, error)
 }
 
 func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (models.ProductPending, models.ProductMaster, error) {
+	var categoryID *string
+	var stickerID *string
+	var typeID string
+
 	barcode := generateUniqueBarcode()
 
 	doc, err := getOrCreateManualDocument(db)
 	if err != nil {
 		return models.ProductPending{}, models.ProductMaster{}, err
 	}
-
-	var categoryID *string
-	var stickerID *string
-	var typeID string
 	priceWarehouse := req.Price
 
 	// =========================
@@ -161,13 +161,6 @@ func (s *inboundService) InboundManual(req models.InboundRequest, db *gorm.DB) (
 	return pending, master, nil
 }
 
-// Helper: generate barcode dan dokumen, bisa diambil dari controller lama
-func generateUniqueBarcode() string {
-	t := time.Now().UnixNano()
-	r := rand.Intn(100000)
-	return fmt.Sprintf("BC-%d-%d", t, r)
-}
-
 func getOrCreateManualDocument(db *gorm.DB) (models.ProductDocument, error) {
 	var doc models.ProductDocument
 	err := db.Where("code = ?", "INBOUND_MANUAL").First(&doc).Error
@@ -186,4 +179,11 @@ func getOrCreateManualDocument(db *gorm.DB) (models.ProductDocument, error) {
 		return doc, nil
 	}
 	return doc, err
+}
+
+// Helper: generate barcode dan dokumen, bisa diambil dari controller lama
+func generateUniqueBarcode() string {
+	t := time.Now().UnixNano()
+	r := rand.Intn(100000)
+	return fmt.Sprintf("BC-%d-%d", t, r)
 }

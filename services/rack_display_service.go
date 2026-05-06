@@ -37,16 +37,16 @@ func (s *RackDisplayService) Delete(id string) error {
 
 // GetDetail returns rack display detail with total_item, total_price, total_price_warehouse
 func (s *RackDisplayService) GetDetail(id string) (*dto.RackDisplayDetailResponse, error) {
+	// Query ke product_master untuk summary
+	var totalItem int
+	var totalPrice float64
+	var totalPriceWarehouse float64
+
 	// Ambil data rack display
 	rack, err := s.Repo.FindByID(id)
 	if err != nil {
 		return nil, errors.New("Rack display not found")
 	}
-
-	// Query ke product_master untuk summary
-	var totalItem int
-	var totalPrice float64
-	var totalPriceWarehouse float64
 
 	db := s.Repo.DB // gunakan DB dari repository
 	err = db.Table("product_masters").
