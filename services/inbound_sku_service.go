@@ -16,7 +16,6 @@ type InboundSKUService interface {
 	CrosscheckPending(pendingID string, itemGood, itemDamaged int) error
 	FinishInboundSKU(documentID string) error
 	ListSKUProductDocuments() ([]models.ProductDocument, error)
-	// List all SKU product documents
 	GetPendingByID(pendingID string) (*models.ProductPending, error)
 	GetDocumentByID(documentID string) (*models.ProductDocument, error)
 }

@@ -14,21 +14,20 @@ import (
 
 // CategoryService defines business logic for categories.
 type CategoryService interface {
-	CreateCategory(input CreateCategoryPayload) (*models.Category, error)
+	CreateCategory(input models.CreateCategoryPayload) (*models.Category, error)
 	ListCategories() ([]models.Category, error)
 	GetCategoryByID(id string) (*models.Category, error)
-	UpdateCategory(id string, input UpdateCategoryPayload) (*models.Category, error)
+	UpdateCategory(id string, input models.UpdateCategoryPayload) (*models.Category, error)
 	DeleteCategory(id string) error
 }
 
-// UpdateCategoryPayload request payload for update.
-type UpdateCategoryPayload struct {
-	Name     string   `json:"name"`
-	Slug     string   `json:"slug"`
-	Discount *int     `json:"discount"`
-	MinPrice *float64 `json:"min_price"`
-	MaxPrice *float64 `json:"max_price"`
-	Status   string   `json:"status"`
+type categoryService struct {
+	repo repositories.CategoryRepository
+}
+
+// NewCategoryService constructor.
+func NewCategoryService(repo repositories.CategoryRepository) CategoryService {
+	return &categoryService{repo: repo}
 }
 
 // DeleteCategory deletes a category by its ID.
@@ -37,7 +36,7 @@ func (s *categoryService) DeleteCategory(id string) error {
 }
 
 // UpdateCategory updates a category by its ID.
-func (s *categoryService) UpdateCategory(id string, input UpdateCategoryPayload) (*models.Category, error) {
+func (s *categoryService) UpdateCategory(id string, input models.UpdateCategoryPayload) (*models.Category, error) {
 	category, err := s.repo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -105,24 +104,6 @@ func (s *categoryService) GetCategoryByID(id string) (*models.Category, error) {
 	return s.repo.GetByID(id)
 }
 
-// CreateCategoryPayload request payload.
-type CreateCategoryPayload struct {
-	Name     string   `json:"name" binding:"required"`
-	Slug     string   `json:"slug"`
-	Discount *int     `json:"discount"`
-	MinPrice *float64 `json:"min_price"`
-	MaxPrice *float64 `json:"max_price"`
-}
-
-type categoryService struct {
-	repo repositories.CategoryRepository
-}
-
-// NewCategoryService constructor.
-func NewCategoryService(repo repositories.CategoryRepository) CategoryService {
-	return &categoryService{repo: repo}
-}
-
 // generateSlugFromName converts name to slug format (lowercase with dashes)
 func (s *categoryService) generateSlugFromName(name string) string {
 	slug := strings.ToLower(strings.TrimSpace(name))
@@ -179,7 +160,7 @@ func (s *categoryService) generateUniqueSlug(baseSlug string) (string, error) {
 	return newSlug, nil
 }
 
-func (s *categoryService) CreateCategory(input CreateCategoryPayload) (*models.Category, error) {
+func (s *categoryService) CreateCategory(input models.CreateCategoryPayload) (*models.Category, error) {
 	if strings.TrimSpace(input.Name) == "" {
 		return nil, errors.New("name is required")
 	}

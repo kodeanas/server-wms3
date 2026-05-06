@@ -168,13 +168,15 @@ func SetupRoutes(r *gin.Engine) {
 		// Inbound Manual
 		api.GET("/inbound/list-masters", controller.ListAllProductMastersHandler(config.DB))
 		api.GET("/inbound/list-pendings", controller.ListAllProductPendingsHandler(config.DB))
-
 		api.GET("/inbound/manual-pending", controller.ListProductManualHandler(config.DB))
+
 		api.POST("/inbound/manual", controller.InboundManualHandler(config.DB))
+
+		//Inbound Bulk
 		api.POST("/inbound/bulk-upload", controller.InboundBulkUploadHandler(config.DB))
-		api.POST("/inbound/bast-upload", controller.InboundBastUploadHandler(config.DB))
 
 		// Inbound BAST
+		api.POST("/inbound/bast-upload", controller.InboundBastUploadHandler(config.DB))
 		api.GET("/inbound/bast-summary", controller.InboundBastSummaryHandler(config.DB))
 
 		api.GET("/product-documents/bast", productDocumentController.GetBastDocuments)
@@ -222,7 +224,6 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/outbound-reguler/buyers", outboundRegulerController.GetBuyers)
 		api.GET("/outbound-reguler/buyers/:id/class-info", outboundRegulerController.GetBuyerClassInfo)
 		api.POST("/outbound-reguler/scan", outboundRegulerController.ScanProduct)
-		api.POST("/outbound-reguler/product", outboundRegulerController.AddProduct)
 		api.DELETE("/outbound-reguler/product/:id", outboundRegulerController.DeleteProduct)
 		api.POST("/outbound-reguler/discount", outboundRegulerController.AddDiscount)
 		api.DELETE("/outbound-reguler/discount/order/:order_id", outboundRegulerController.DeleteAllDiscountsByOrderID)

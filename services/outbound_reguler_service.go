@@ -13,7 +13,6 @@ type OutboundRegulerService interface {
 	GetBuyers() interface{}
 	GetBuyerClassInfo(id string) interface{}
 	ScanProduct(ctx interface{}) interface{}
-	AddProduct(ctx interface{}) interface{}
 	DeleteProduct(id string) interface{}
 	AddDiscount(ctx interface{}) interface{}
 	UpdateTax(ctx interface{}) interface{}
@@ -113,15 +112,6 @@ func (s *outboundRegulerService) GetBuyerClassInfo(id string) interface{} {
 		resp["next_class_note"] = "Sudah di class tertinggi."
 	}
 	return resp
-}
-
-func NowDate() (now time.Time) {
-	now = time.Now()
-	return
-}
-
-func itoa(i int) string {
-	return fmt.Sprintf("%d", i)
 }
 
 func (s *outboundRegulerService) ScanProduct(ctx interface{}) interface{} {
@@ -243,48 +233,7 @@ func (s *outboundRegulerService) ScanProduct(ctx interface{}) interface{} {
 
 	return map[string]interface{}{"order_id": order.ID.String(), "product_order_id": po.ID.String()}
 }
-func (s *outboundRegulerService) AddProduct(ctx interface{}) interface{} {
-	req, ok := ctx.(map[string]interface{})
-	if !ok {
-		return map[string]interface{}{"error": "invalid request"}
-	}
-	orderID, _ := req["order_id"].(string)
-	productID, _ := req["product_id"].(string)
-	qty, ok := req["qty"].(int)
-	if !ok || qty < 1 {
-		qty = 1
-	}
-	order, err := s.orderRepo.GetByID(orderID)
-	if err != nil {
-		return map[string]interface{}{"error": "Order tidak ditemukan"}
-	}
-	product, err := s.productMasterRepo.FindByID(productID)
-	if err != nil {
-		return map[string]interface{}{"error": "Produk tidak ditemukan"}
-	}
-	discount := 0.0
-	if product.CategoryID != nil {
-		cat, err := s.categoryRepo.GetByID(*product.CategoryID)
-		if err == nil && cat.Discount != nil {
-			discount = float64(*cat.Discount)
-		}
-	}
-	var lastID string
-	for i := 0; i < qty; i++ {
-		po := &models.ProductOrder{
-			OrderID:   order.ID.String(),
-			ProductID: product.ID.String(),
-			Name:      product.Name,
-			Price:     product.Price,
-			Discount:  discount,
-		}
-		if err := s.productOrderRepo.Create(po); err != nil {
-			return map[string]interface{}{"error": "Gagal menambah produk ke order"}
-		}
-		lastID = po.ID.String()
-	}
-	return map[string]interface{}{"product_order_id": lastID}
-}
+
 func (s *outboundRegulerService) DeleteProduct(id string) interface{} {
 
 	// Cek apakah id benar-benar ada di tabel product_orders
@@ -643,4 +592,13 @@ func (s *outboundRegulerService) DeleteAllDiscountsByOrderID(orderID string) int
 	order.GrandTotal = totalSetelahDiskonClass - totalDiskon - taxValue + totalBoxValue
 	_ = s.orderRepo.Update(order)
 	return map[string]interface{}{"success": true, "grand_total": order.GrandTotal}
+}
+
+func NowDate() (now time.Time) {
+	now = time.Now()
+	return
+}
+
+func itoa(i int) string {
+	return fmt.Sprintf("%d", i)
 }

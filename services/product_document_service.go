@@ -8,11 +8,11 @@ import (
 	"wms/repositories"
 )
 
+// ProductDocumentService interface untuk service dokumen produk
 type ProductDocumentService interface {
 	ListDocuments() ([]models.ProductDocument, error)
 	GetBulkDocuments() ([]models.ProductDocument, error)
 	GetBulkDocumentDetail(id string) (models.ProductDocument, error)
-
 	GetBastDocuments() ([]models.ProductDocument, error)
 	GetBastRelationsDetail(id string) (map[string]interface{}, error)
 	GetBastOverview(id string) (map[string]interface{}, error)
@@ -24,37 +24,41 @@ type productDocumentService struct {
 	repo repositories.ProductDocumentRepository
 }
 
+// NewProductDocumentService constructor
 func NewProductDocumentService(repo repositories.ProductDocumentRepository) ProductDocumentService {
 	return &productDocumentService{repo: repo}
 }
 
+// ListDocuments mengambil semua dokumen produk
 func (s *productDocumentService) ListDocuments() ([]models.ProductDocument, error) {
 	return s.repo.FindAll()
 }
 
+// FinishDocument menandai dokumen selesai
 func (s *productDocumentService) FinishDocument(id string) error {
 	now := time.Now()
-	err := s.repo.UpdateDateStopByID(id, &now)
-	if err != nil {
+	if err := s.repo.UpdateDateStopByID(id, &now); err != nil {
 		return err
 	}
 	return s.repo.UpdateStatusByID(id, "done")
 }
 
-// Implementasi filter bulk
+// GetBulkDocuments mengambil dokumen dengan tipe bulk
 func (s *productDocumentService) GetBulkDocuments() ([]models.ProductDocument, error) {
 	return s.repo.FindByType("bulk")
 }
 
+// GetBulkDocumentDetail mengambil detail dokumen bulk berdasarkan ID
 func (s *productDocumentService) GetBulkDocumentDetail(id string) (models.ProductDocument, error) {
 	return s.repo.FindBulkDetailByID(id)
 }
 
-// Implementasi filter bast
+// GetBastDocuments mengambil dokumen dengan tipe bast
 func (s *productDocumentService) GetBastDocuments() ([]models.ProductDocument, error) {
 	return s.repo.FindByType("bast")
 }
 
+// GetBastRelationsDetail mengambil detail relasi bast (pending & scanned)
 func (s *productDocumentService) GetBastRelationsDetail(id string) (map[string]interface{}, error) {
 	if _, err := s.repo.FindBastByID(id); err != nil {
 		return nil, err
@@ -76,6 +80,7 @@ func (s *productDocumentService) GetBastRelationsDetail(id string) (map[string]i
 	}, nil
 }
 
+// GetBastOverview mengambil overview dokumen bast
 func (s *productDocumentService) GetBastOverview(id string) (map[string]interface{}, error) {
 	doc, err := s.repo.FindBastByID(id)
 	if err != nil {
@@ -102,6 +107,7 @@ func (s *productDocumentService) GetBastOverview(id string) (map[string]interfac
 	return data, nil
 }
 
+// GetBastPendingsByType mengambil summary pending bast berdasarkan status
 func (s *productDocumentService) GetBastPendingsByType(id string) (map[string]interface{}, error) {
 	doc, err := s.repo.FindBastByID(id)
 	if err != nil {

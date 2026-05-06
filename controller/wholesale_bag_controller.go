@@ -56,10 +56,11 @@ func (ctl *WholesaleBagController) ListByBagID(c *gin.Context) {
 }
 
 func (ctl *WholesaleBagController) ScanBarcodeWarehouse(c *gin.Context) {
-	bagID := c.Param("bagID")
 	var req struct {
 		BarcodeWarehouse string `json:"barcode_warehouse" binding:"required"`
 	}
+
+	bagID := c.Param("bagID")
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.SendError(c, http.StatusBadRequest, err.Error())
 		return
