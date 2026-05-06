@@ -155,17 +155,42 @@ func (ctl *ProductMasterController) ScanBarcodeWarehouse(c *gin.Context) {
 
 // List all product master in a rack staging
 func (ctl *ProductMasterController) ListByRackStagingID(c *gin.Context) {
-	rackStagingID := c.Param("rackStagingID")
-	if rackStagingID == "" {
-		utils.SendError(c, 400, "Kolom rackStagingID kosong")
-		return
-	}
-	masters, err := ctl.service.ListByRackStagingID(rackStagingID)
-	if err != nil {
-		utils.SendError(c, 500, err.Error())
-		return
-	}
-	utils.SendSuccess(c, masters, "List produk di rack staging", nil, http.StatusOK)
+	       rackStagingID := c.Param("rackStagingID")
+	       if rackStagingID == "" {
+		       utils.SendError(c, 400, "Kolom rackStagingID kosong")
+		       return
+	       }
+	       masters, err := ctl.service.ListByRackStagingID(rackStagingID)
+	       if err != nil {
+		       utils.SendError(c, 500, err.Error())
+		       return
+	       }
+	       // Mapping ke response minimalis dan resolve category_name
+	       var resp []dto.ProductMasterRackStagingResponse
+	       catRepo := repositories.NewCategoryRepository(config.DB)
+	       for _, m := range masters {
+		       var categoryName *string
+		       if m.CategoryID != nil {
+			       cat, err := catRepo.GetByID(*m.CategoryID)
+			       if err == nil && cat != nil {
+				       categoryName = &cat.Name
+			       }
+		       }
+		       resp = append(resp, dto.ProductMasterRackStagingResponse{
+			       ID:               m.ID.String(),
+			       BarcodeWarehouse: m.BarcodeWarehouse,
+			       NameWarehouse:    m.NameWarehouse,
+			       ItemWarehouse:    m.ItemWarehouse,
+			       PriceWarehouse:   m.PriceWarehouse,
+			       CategoryID:       m.CategoryID,
+			       CategoryName:     categoryName,
+			       StickerID:        m.StickerID,
+			       CreatedAt:        m.CreatedAt,
+			       UpdatedAt:        m.UpdatedAt,
+			       DeletedAt:        m.DeletedAt,
+		       })
+	       }
+	       utils.SendSuccess(c, resp, "List produk di rack staging", nil, http.StatusOK)
 }
 
 // Helper untuk validasi rack staging sudah di-lock

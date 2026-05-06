@@ -12,7 +12,7 @@ import (
 
 type WholesaleBagService interface {
 	CreateWholesaleBag(userID string) (*models.Bag, error)
-	ListWholesaleBags() ([]models.Bag, error)
+	ListWholesaleBags() ([]dto.WholesaleBagListResponse, error)
 	GetWholesaleBagByID(id string) (*models.Bag, error)
 	ListProductsByWholesaleBagID(bagID string) ([]models.ProductMaster, error)
 	GetWholesaleBagDetail(bagID string) (*dto.RackStagingDetailResponse, error)
@@ -48,8 +48,22 @@ func (s *wholesaleBagService) CreateWholesaleBag(userID string) (*models.Bag, er
 	return bag, nil
 }
 
-func (s *wholesaleBagService) ListWholesaleBags() ([]models.Bag, error) {
-	return s.repo.FindByType("reguler")
+func (s *wholesaleBagService) ListWholesaleBags() ([]dto.WholesaleBagListResponse, error) {
+	bags, err := s.repo.FindByType("reguler")
+	if err != nil {
+		return nil, err
+	}
+	var resp []dto.WholesaleBagListResponse
+	for _, b := range bags {
+		resp = append(resp, dto.WholesaleBagListResponse{
+			ID:        b.ID.String(),
+			Code:      b.Code,
+			CreatedAt: b.CreatedAt,
+			UpdatedAt: b.UpdatedAt,
+			DeletedAt: b.DeletedAt,
+		})
+	}
+	return resp, nil
 }
 
 func (s *wholesaleBagService) GetWholesaleBagByID(id string) (*models.Bag, error) {

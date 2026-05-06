@@ -2,6 +2,15 @@ package dto
 
 import "time"
 
+type ProductMasterScanResponse struct {
+	ID               string  `json:"id"`
+	BarcodeWarehouse string  `json:"barcode_warehouse"`
+	NameWarehouse    string  `json:"name_warehouse"`
+	ItemWarehouse    int     `json:"item_warehouse"`
+	Location         string  `json:"location"`
+	RackStagingID    *string `json:"rack_staging_id"`
+}
+
 type ProductMasterRegulerResponse struct {
 	ID               string    `json:"id"`
 	DocumentID       string    `json:"document_id"`
@@ -88,4 +97,19 @@ type ProductMasterCategoryAdditional struct {
 	Diskon  int    `json:"diskon"`
 	Type    string `json:"type"`
 	CodeHex string `json:"code_hex"`
+}
+
+// Response khusus untuk /rack-stagings/:rackStagingID/products
+type ProductMasterRackStagingResponse struct {
+	ID               string      `json:"id"`
+	BarcodeWarehouse string      `json:"barcode_warehouse"`
+	NameWarehouse    string      `json:"name_warehouse"`
+	ItemWarehouse    int         `json:"item_warehouse"`
+	PriceWarehouse   float64     `json:"price_warehouse"`
+	CategoryID       *string     `json:"category_id"`
+	CategoryName     *string     `json:"category_name"`
+	StickerID        *string     `json:"sticker_id"`
+	CreatedAt        time.Time   `json:"created_at"`
+	UpdatedAt        time.Time   `json:"updated_at"`
+	DeletedAt        interface{} `json:"deleted_at"`
 }

@@ -146,22 +146,50 @@ func SetupRoutes(r *gin.Engine) {
 		api.DELETE("/users/:id", userController.DeleteUser)
 		api.PUT("/users/:id/password", userController.UpdatePassword)
 
+		// Product Master Summary
+		api.GET("/manual/summary", productMasterSummaryController.GetSummary)
+
+		// Product Master Staging Reguler
+		api.GET("/product-masters/staging-reguler", productMasterController.ListStagingReguler)
+		api.GET("/product-masters/staging-sticker", productMasterController.ListStagingSticker)
+		api.POST("/product-masters/staging/:id", productMasterController.UpdateStaging)
+		api.GET("/product-masters/:id", productMasterController.GetDetail)
+
+		// Product Document
+		api.GET("/product-documents", productDocumentController.ListDocuments)
+		api.GET("/product-documents/bulk", productDocumentController.GetBulkDocuments)
+		api.GET("/product-documents/bulk/:id", productDocumentController.GetBulkDocumentDetail)
+
+		api.GET("/product-documents/bast/:id/relations", productDocumentController.GetBastRelationsDetail)
+		api.GET("/product-documents/bast/:id/overview", productDocumentController.GetBastOverview)
+		api.GET("/product-documents/bast/:id/pending-by-type", productDocumentController.GetBastPendingByType)
+		api.GET("/product-documents/sku", inboundSKUController.ListSKUProductDocuments)
+
 		// Inbound Manual
 		api.GET("/inbound/list-masters", controller.ListAllProductMastersHandler(config.DB))
 		api.GET("/inbound/list-pendings", controller.ListAllProductPendingsHandler(config.DB))
-
 		api.GET("/inbound/manual-pending", controller.ListProductManualHandler(config.DB))
+
 		api.POST("/inbound/manual", controller.InboundManualHandler(config.DB))
+
+		//Inbound Bulk
 		api.POST("/inbound/bulk-upload", controller.InboundBulkUploadHandler(config.DB))
-		api.POST("/inbound/bast-upload", controller.InboundBastUploadHandler(config.DB))
 
 		// Inbound BAST
+		api.POST("/inbound/bast-upload", controller.InboundBastUploadHandler(config.DB))
 		api.GET("/inbound/bast-summary", controller.InboundBastSummaryHandler(config.DB))
 
+		api.GET("/product-documents/bast", productDocumentController.GetBastDocuments)
 		api.GET("/inbound/bast-scanner/document/:document_id", controller.InboundBastGetDocumentHandler(config.DB))
 		api.GET("/inbound/bast-scanner/:document_id/product/:barcode", controller.InboundBastGetPendingProductHandler(config.DB))
 		api.POST("/inbound/bast-scanner/:document_id/scan/:barcode", controller.InboundBastScanSingleProductHandler(config.DB))
 		api.POST("/inbound/bast-scanner/:document_id/finish", productDocumentController.FinishDocument)
+
+		// Inbound SKU
+		api.POST("/inbound-sku/upload", inboundSKUController.UploadExcel)
+		api.POST("/inbound-sku/crosscheck/:pending_id", inboundSKUController.CrosscheckPending)
+		api.POST("/inbound-sku/finish/:document_id", inboundSKUController.FinishInboundSKU)
+		api.GET("/inbound-sku/document/:document_id", controller.InboundSKUGetDocumentHandler(config.DB))
 
 		// Rack Displays
 		api.POST("/rack-displays", rackDisplayController.Create)
@@ -192,36 +220,10 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/wholesale-bags/:bagID/products", BagController.ListByBagID)
 		api.POST("/wholesale-bags/:bagID/scanner/scan-barcode", BagController.ScanBarcodeWarehouse)
 
-		// Product Master Staging Reguler
-		api.GET("/product-masters/staging-reguler", productMasterController.ListStagingReguler)
-		api.GET("/product-masters/staging-sticker", productMasterController.ListStagingSticker)
-		api.POST("/product-masters/staging/:id", productMasterController.UpdateStaging)
-		api.GET("/product-masters/:id", productMasterController.GetDetail)
-
-		// Product Document
-		api.GET("/product-documents", productDocumentController.ListDocuments)
-		api.GET("/product-documents/bulk", productDocumentController.GetBulkDocuments)
-		api.GET("/product-documents/bulk/:id", productDocumentController.GetBulkDocumentDetail)
-		api.GET("/product-documents/bast", productDocumentController.GetBastDocuments)
-		api.GET("/product-documents/bast/:id/relations", productDocumentController.GetBastRelationsDetail)
-		api.GET("/product-documents/bast/:id/overview", productDocumentController.GetBastOverview)
-		api.GET("/product-documents/bast/:id/pending-by-type", productDocumentController.GetBastPendingByType)
-		api.GET("/product-documents/sku", inboundSKUController.ListSKUProductDocuments)
-
-		// Product Master Summary
-		api.GET("/manual/summary", productMasterSummaryController.GetSummary)
-
-		// Inbound SKU
-		api.POST("/inbound-sku/upload", inboundSKUController.UploadExcel)
-		api.POST("/inbound-sku/crosscheck/:pending_id", inboundSKUController.CrosscheckPending)
-		api.POST("/inbound-sku/finish/:document_id", inboundSKUController.FinishInboundSKU)
-		api.GET("/inbound-sku/document/:document_id", controller.InboundSKUGetDocumentHandler(config.DB))
-
 		// Outbound Reguler
 		api.GET("/outbound-reguler/buyers", outboundRegulerController.GetBuyers)
 		api.GET("/outbound-reguler/buyers/:id/class-info", outboundRegulerController.GetBuyerClassInfo)
 		api.POST("/outbound-reguler/scan", outboundRegulerController.ScanProduct)
-		api.POST("/outbound-reguler/product", outboundRegulerController.AddProduct)
 		api.DELETE("/outbound-reguler/product/:id", outboundRegulerController.DeleteProduct)
 		api.POST("/outbound-reguler/discount", outboundRegulerController.AddDiscount)
 		api.DELETE("/outbound-reguler/discount/order/:order_id", outboundRegulerController.DeleteAllDiscountsByOrderID)

@@ -3,6 +3,8 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"time"
+	dto "wms/dto/response"
 	"wms/services"
 	"wms/utils"
 
@@ -63,7 +65,24 @@ func (ctl *ProductDocumentController) GetBastDocuments(c *gin.Context) {
 		return
 	}
 
-	utils.SendSuccess(c, docs, "List bast product documents", nil, http.StatusOK)
+	// Custom response: only selected fields for each document
+	var resp []dto.BastDocumentResponse
+	for _, doc := range docs {
+		resp = append(resp, dto.BastDocumentResponse{
+			ID:        doc.ID.String(),
+			Code:      doc.Code,
+			FileName:  doc.FileName,
+			FileItem:  doc.FileItem,
+			FilePrice: doc.FilePrice,
+			Status:    doc.Status,
+			UserID:    doc.UserID,
+			CreatedAt: doc.CreatedAt.Format(time.RFC3339Nano),
+			UpdatedAt: doc.UpdatedAt.Format(time.RFC3339Nano),
+			DeletedAt: doc.DeletedAt,
+			DateStop:  doc.DateStop,
+		})
+	}
+	utils.SendSuccess(c, resp, "List bast product documents", nil, http.StatusOK)
 }
 
 func (ctl *ProductDocumentController) GetBastRelationsDetail(c *gin.Context) {

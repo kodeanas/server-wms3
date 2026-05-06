@@ -19,3 +19,22 @@ type Category struct {
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
+
+// UpdateCategoryPayload request payload for update.
+type UpdateCategoryPayload struct {
+	Name     string   `json:"name"`
+	Slug     string   `json:"slug"`
+	Discount *int     `json:"discount"`
+	MinPrice *float64 `json:"min_price"`
+	MaxPrice *float64 `json:"max_price"`
+	Status   string   `json:"status"`
+}
+
+// CreateCategoryPayload request payload.
+type CreateCategoryPayload struct {
+	Name     string   `json:"name" binding:"required"`
+	Slug     string   `json:"slug"`
+	Discount *int     `json:"discount"`
+	MinPrice *float64 `json:"min_price"`
+	MaxPrice *float64 `json:"max_price"`
+}

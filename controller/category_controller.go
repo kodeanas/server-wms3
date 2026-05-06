@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"wms/models"
 	"wms/services"
 	"wms/utils"
 
@@ -21,7 +22,7 @@ func NewCategoryController(service services.CategoryService) *CategoryController
 // UpdateCategory endpoint.
 func (ctrl *CategoryController) UpdateCategory(c *gin.Context) {
 	id := c.Param("id")
-	var payload services.UpdateCategoryPayload
+	var payload models.UpdateCategoryPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		validationErrors := []utils.ErrorItem{{Field: "", Message: err.Error()}}
 		utils.SendValidationError(c, validationErrors)
@@ -51,7 +52,7 @@ func (ctrl *CategoryController) DeleteCategory(c *gin.Context) {
 
 // CreateCategory endpoint.
 func (ctrl *CategoryController) CreateCategory(c *gin.Context) {
-	var payload services.CreateCategoryPayload
+	var payload models.CreateCategoryPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		validationErrors := []utils.ErrorItem{{Field: "", Message: err.Error()}}
 		utils.SendValidationError(c, validationErrors)

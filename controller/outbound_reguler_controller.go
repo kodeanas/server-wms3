@@ -46,17 +46,6 @@ func (ctrl *OutboundRegulerController) ScanProduct(c *gin.Context) {
 	utils.SendSuccess(c, res, "", nil, http.StatusOK)
 }
 
-// POST /outbound-reguler/product
-func (ctrl *OutboundRegulerController) AddProduct(c *gin.Context) {
-	var req map[string]interface{}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.SendValidationError(c, []utils.ErrorItem{{Field: "", Message: err.Error()}})
-		return
-	}
-	res := ctrl.service.AddProduct(req)
-	utils.SendSuccess(c, res, "", nil, http.StatusOK)
-}
-
 // DELETE /outbound-reguler/product/:id
 func (ctrl *OutboundRegulerController) DeleteProduct(c *gin.Context) {
 	id := c.Param("id")

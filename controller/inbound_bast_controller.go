@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"time"
+	dto "wms/dto/response"
 	"wms/models"
 	"wms/repositories"
 	"wms/services"
@@ -113,10 +114,42 @@ func InboundBastGetDocumentHandler(db *gorm.DB) gin.HandlerFunc {
 				unscanned++
 			}
 		}
+		// Custom document response (optional: select only needed fields)
+		// Map document to DTO
+		var docResp *dto.BastDocumentResponse
+		if doc != nil {
+			docResp = &dto.BastDocumentResponse{
+				ID:        doc.ID.String(),
+				Code:      doc.Code,
+				FileName:  doc.FileName,
+				FileItem:  doc.FileItem,
+				FilePrice: doc.FilePrice,
+				Status:    doc.Status,
+				UserID:    doc.UserID,
+				CreatedAt: doc.CreatedAt.Format(time.RFC3339Nano),
+				UpdatedAt: doc.UpdatedAt.Format(time.RFC3339Nano),
+				DeletedAt: doc.DeletedAt,
+				DateStop:  doc.DateStop,
+			}
+		}
+		// Map products to DTO
+		var products []dto.BastProductResponse
+		for _, p := range pendings {
+			products = append(products, dto.BastProductResponse{
+				ID:          p.ID.String(),
+				Barcode:     p.Barcode,
+				Name:        p.Name,
+				Item:        p.Item,
+				Price:       p.Price,
+				Note:        p.Note,
+				DateScanned: p.DateScanned,
+			})
+		}
 		utils.SendSuccess(c, gin.H{
-			"document":        doc,
+			"document":        docResp,
 			"scanned_count":   scanned,
 			"unscanned_count": unscanned,
+			"products":        products,
 		}, "OK", nil, http.StatusOK)
 	}
 }
