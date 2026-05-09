@@ -11,7 +11,7 @@ import (
 type ClassRepository interface {
 	Create(class *models.Class) error
 	GetByID(id string) (*models.Class, error)
-	List() ([]models.Class, error)
+	ListPaginated(limit, offset int, search string) ([]models.Class, int64, error)
 	Update(class *models.Class) error
 	Delete(id string) error
 	GetMaxIteration() (int, error)
@@ -99,12 +99,23 @@ func (r *classRepository) GetByID(id string) (*models.Class, error) {
 	return &class, nil
 }
 
-func (r *classRepository) List() ([]models.Class, error) {
-       var classes []models.Class
-       if err := r.db.Order("iteration ASC").Find(&classes).Error; err != nil {
-	       return nil, err
-       }
-       return classes, nil
+func (r *classRepository) ListPaginated(limit, offset int, search string) ([]models.Class, int64, error) {
+	var (
+		classes []models.Class
+		total   int64
+	)
+	query := r.db.Model(&models.Class{})
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("name ILIKE ?", like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("iteration ASC").Limit(limit).Offset(offset).Find(&classes).Error; err != nil {
+		return nil, 0, err
+	}
+	return classes, total, nil
 }
 
 func (r *classRepository) Update(class *models.Class) error {

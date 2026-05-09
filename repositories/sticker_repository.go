@@ -18,6 +18,7 @@ type StickerRepository interface {
 	GetSlugLike(slug string) ([]models.Sticker, error)
 	GetByID(id string) (*models.Sticker, error)
 	List() ([]models.Sticker, error)
+	ListPaginated(limit, offset int, search string) ([]models.Sticker, int64, error)
 	Update(sticker *models.Sticker) error
 	Delete(id string) error
 }
@@ -61,6 +62,25 @@ func (r *stickerRepository) List() ([]models.Sticker, error) {
 		return nil, err
 	}
 	return stickers, nil
+}
+
+func (r *stickerRepository) ListPaginated(limit, offset int, search string) ([]models.Sticker, int64, error) {
+	var (
+		stickers []models.Sticker
+		total    int64
+	)
+	query := r.db.Model(&models.Sticker{})
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("name ILIKE ? OR slug ILIKE ? OR code_hex ILIKE ?", like, like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&stickers).Error; err != nil {
+		return nil, 0, err
+	}
+	return stickers, total, nil
 }
 
 func (r *stickerRepository) Update(sticker *models.Sticker) error {

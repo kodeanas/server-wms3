@@ -49,7 +49,7 @@ func InboundBastSummaryHandler(db *gorm.DB) gin.HandlerFunc {
 			utils.SendError(c, 500, err.Error())
 			return
 		}
-		utils.SendSuccess(c, result, "OK", nil, http.StatusOK)
+		utils.SendItemSuccess(c, result, "", http.StatusOK)
 	}
 }
 
@@ -145,12 +145,12 @@ func InboundBastGetDocumentHandler(db *gorm.DB) gin.HandlerFunc {
 				DateScanned: p.DateScanned,
 			})
 		}
-		utils.SendSuccess(c, gin.H{
+		utils.SendItemSuccess(c, gin.H{
 			"document":        docResp,
 			"scanned_count":   scanned,
 			"unscanned_count": unscanned,
 			"products":        products,
-		}, "OK", nil, http.StatusOK)
+		}, "", http.StatusOK)
 	}
 }
 
@@ -168,7 +168,7 @@ func InboundBastGetPendingProductHandler(db *gorm.DB) gin.HandlerFunc {
 			utils.SendError(c, 409, "Produk sudah di-scan dan tidak dapat diakses lagi.")
 			return
 		}
-		utils.SendSuccess(c, product, "OK", nil, http.StatusOK)
+		utils.SendItemSuccess(c, product, "", http.StatusOK)
 	}
 }
 

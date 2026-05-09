@@ -30,7 +30,7 @@ type ClassWithDecimal struct {
 type BuyerService interface {
 	CreateBuyer(input models.CreateBuyerPayload) (*models.Buyer, error)
 	GetBuyerByID(id string) (*models.Buyer, error)
-	ListBuyers() ([]BuyerWithClass, error)
+	ListBuyersPaginated(page, limit int, search string) ([]BuyerWithClass, int64, error)
 	UpdateBuyer(id string, input models.UpdateBuyerPayload) (*models.Buyer, error)
 	DeleteBuyer(id string) error
 }
@@ -80,12 +80,20 @@ func classToWithDecimal(c *models.Class) *ClassWithDecimal {
 	}
 }
 
-func (s *buyerService) ListBuyers() ([]BuyerWithClass, error) {
-	buyers, err := s.repo.List()
-	if err != nil {
-		return nil, err
+func (s *buyerService) ListBuyersPaginated(page, limit int, search string) ([]BuyerWithClass, int64, error) {
+	if page < 1 {
+		page = 1
 	}
-	var result []BuyerWithClass
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+
+	buyers, total, err := s.repo.ListPaginated(limit, offset, search)
+	if err != nil {
+		return nil, 0, err
+	}
+	result := make([]BuyerWithClass, 0, len(buyers))
 	for _, b := range buyers {
 		var class *ClassWithDecimal
 		if b.ClassID != "" {
@@ -96,7 +104,7 @@ func (s *buyerService) ListBuyers() ([]BuyerWithClass, error) {
 		}
 		result = append(result, BuyerWithClass{Buyer: b, Class: class})
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (s *buyerService) UpdateBuyer(id string, input models.UpdateBuyerPayload) (*models.Buyer, error) {

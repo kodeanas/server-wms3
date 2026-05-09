@@ -13,8 +13,10 @@ import (
 type WholesaleBagService interface {
 	CreateWholesaleBag(userID string) (*models.Bag, error)
 	ListWholesaleBags() ([]dto.WholesaleBagListResponse, error)
+	ListWholesaleBagsPaginated(page, limit int, search string) ([]dto.WholesaleBagListResponse, int64, error)
 	GetWholesaleBagByID(id string) (*models.Bag, error)
 	ListProductsByWholesaleBagID(bagID string) ([]models.ProductMaster, error)
+	ListProductsByWholesaleBagIDPaginated(bagID string, page, limit int, search string) ([]models.ProductMaster, int64, error)
 	GetWholesaleBagDetail(bagID string) (*dto.RackStagingDetailResponse, error)
 	GetProductByBarcodeWarehouse(barcode string) (*models.ProductMaster, error)
 	SetBag(productID string, bagID string) error
@@ -66,6 +68,31 @@ func (s *wholesaleBagService) ListWholesaleBags() ([]dto.WholesaleBagListRespons
 	return resp, nil
 }
 
+func (s *wholesaleBagService) ListWholesaleBagsPaginated(page, limit int, search string) ([]dto.WholesaleBagListResponse, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	bags, total, err := s.repo.FindByTypePaginated("reguler", limit, offset, search)
+	if err != nil {
+		return nil, 0, err
+	}
+	resp := make([]dto.WholesaleBagListResponse, 0, len(bags))
+	for _, b := range bags {
+		resp = append(resp, dto.WholesaleBagListResponse{
+			ID:        b.ID.String(),
+			Code:      b.Code,
+			CreatedAt: b.CreatedAt,
+			UpdatedAt: b.UpdatedAt,
+			DeletedAt: b.DeletedAt,
+		})
+	}
+	return resp, total, nil
+}
+
 func (s *wholesaleBagService) GetWholesaleBagByID(id string) (*models.Bag, error) {
 	bag, err := s.repo.FindByID(id)
 	if err != nil {
@@ -79,6 +106,17 @@ func (s *wholesaleBagService) GetWholesaleBagByID(id string) (*models.Bag, error
 
 func (s *wholesaleBagService) ListProductsByWholesaleBagID(bagID string) ([]models.ProductMaster, error) {
 	return s.productMasterRepo.FindByBagID(bagID)
+}
+
+func (s *wholesaleBagService) ListProductsByWholesaleBagIDPaginated(bagID string, page, limit int, search string) ([]models.ProductMaster, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.productMasterRepo.FindByBagIDPaginated(bagID, limit, offset, search)
 }
 
 func (s *wholesaleBagService) GetWholesaleBagDetail(bagID string) (*dto.RackStagingDetailResponse, error) {

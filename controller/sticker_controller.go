@@ -47,18 +47,21 @@ func (ctrl *StickerController) GetStickerByID(c *gin.Context) {
 		return
 	}
 
-	utils.SendSuccess(c, sticker, "Sticker ditemukan", nil, http.StatusOK)
+	utils.SendItemSuccess(c, sticker, "", http.StatusOK)
 }
 
 // ListStickers endpoint.
 func (ctrl *StickerController) ListStickers(c *gin.Context) {
-	stickers, err := ctrl.service.ListStickers()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	stickers, total, err := ctrl.service.ListStickersPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
 
-	utils.SendSuccess(c, stickers, "Daftar sticker", nil, http.StatusOK)
+	utils.SendListSuccess(c, stickers, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // UpdateSticker endpoint.

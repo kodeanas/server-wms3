@@ -38,16 +38,19 @@ func (ctrl *UserController) GetUserByID(c *gin.Context) {
 		utils.SendError(c, 404, err.Error())
 		return
 	}
-	utils.SendSuccess(c, user, "OK", nil, http.StatusOK)
+	utils.SendItemSuccess(c, user, "", http.StatusOK)
 }
 
 func (ctrl *UserController) ListUsers(c *gin.Context) {
-	users, err := ctrl.service.ListUsers()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	users, total, err := ctrl.service.ListUsersPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
-	utils.SendSuccess(c, users, "OK", nil, http.StatusOK)
+	utils.SendListSuccess(c, users, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 func (ctrl *UserController) UpdateUser(c *gin.Context) {

@@ -27,12 +27,15 @@ func (ctl *WholesaleBagController) Create(c *gin.Context) {
 }
 
 func (ctl *WholesaleBagController) List(c *gin.Context) {
-	bags, err := ctl.service.ListWholesaleBags()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	bags, total, err := ctl.service.ListWholesaleBagsPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.SendSuccess(c, bags, "List wholesale bags", nil, http.StatusOK)
+	utils.SendListSuccess(c, bags, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 func (ctl *WholesaleBagController) GetDetail(c *gin.Context) {
@@ -42,17 +45,20 @@ func (ctl *WholesaleBagController) GetDetail(c *gin.Context) {
 		utils.SendError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.SendSuccess(c, detail, "Detail wholesale bag", nil, http.StatusOK)
+	utils.SendItemSuccess(c, detail, "", http.StatusOK)
 }
 
 func (ctl *WholesaleBagController) ListByBagID(c *gin.Context) {
 	bagID := c.Param("bagID")
-	products, err := ctl.service.ListProductsByWholesaleBagID(bagID)
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	products, total, err := ctl.service.ListProductsByWholesaleBagIDPaginated(bagID, pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.SendSuccess(c, products, "List produk dalam wholesale bag", nil, http.StatusOK)
+	utils.SendListSuccess(c, products, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 func (ctl *WholesaleBagController) ScanBarcodeWarehouse(c *gin.Context) {

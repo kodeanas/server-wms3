@@ -17,7 +17,7 @@ type StickerService interface {
 	CreateSticker(input models.CreateStickerPayload) (*models.Sticker, error)
 	GetStickerBySlug(slug string) (*models.Sticker, error)
 	GetStickerByID(id string) (*models.Sticker, error)
-	ListStickers() ([]models.Sticker, error)
+	ListStickersPaginated(page, limit int, search string) ([]models.Sticker, int64, error)
 	UpdateSticker(id string, input models.UpdateStickerPayload) (*models.Sticker, error)
 	DeleteSticker(id string) error
 }
@@ -144,8 +144,15 @@ func (s *stickerService) GetStickerByID(id string) (*models.Sticker, error) {
 	return s.repo.GetByID(id)
 }
 
-func (s *stickerService) ListStickers() ([]models.Sticker, error) {
-	return s.repo.List()
+func (s *stickerService) ListStickersPaginated(page, limit int, search string) ([]models.Sticker, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.ListPaginated(limit, offset, search)
 }
 
 func (s *stickerService) UpdateSticker(id string, input models.UpdateStickerPayload) (*models.Sticker, error) {

@@ -23,6 +23,17 @@ func (s *RackDisplayService) GetAll() ([]models.RackDisplay, error) {
 	return s.Repo.FindAll()
 }
 
+func (s *RackDisplayService) GetAllPaginated(page, limit int, search string) ([]models.RackDisplay, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.Repo.FindAllPaginated(limit, offset, search)
+}
+
 func (s *RackDisplayService) GetByID(id string) (*models.RackDisplay, error) {
 	return s.Repo.FindByID(id)
 }

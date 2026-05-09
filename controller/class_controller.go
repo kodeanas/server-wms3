@@ -58,17 +58,20 @@ func (ctrl *ClassController) GetClassByID(c *gin.Context) {
 		"created_at":            class.CreatedAt,
 		"updated_at":            class.UpdatedAt,
 	}
-	utils.SendSuccess(c, resp, "", nil, http.StatusOK)
+	utils.SendItemSuccess(c, resp, "", http.StatusOK)
 }
 
 // ListClasses endpoint.
 func (ctrl *ClassController) ListClasses(c *gin.Context) {
-	classes, err := ctrl.service.ListClasses()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	classes, total, err := ctrl.service.ListClassesPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
-	var resp []map[string]interface{}
+	resp := make([]map[string]interface{}, 0, len(classes))
 	for _, class := range classes {
 		resp = append(resp, map[string]interface{}{
 			"id":                    class.ID,
@@ -83,7 +86,7 @@ func (ctrl *ClassController) ListClasses(c *gin.Context) {
 			"updated_at":            class.UpdatedAt,
 		})
 	}
-	utils.SendSuccess(c, resp, "", nil, http.StatusOK)
+	utils.SendListSuccess(c, resp, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // UpdateClass endpoint.

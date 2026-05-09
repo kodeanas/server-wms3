@@ -9,7 +9,7 @@ import (
 type UserService interface {
 	CreateUser(input models.CreateUserPayload) (*models.User, error)
 	GetUserByID(id string) (*models.User, error)
-	ListUsers() ([]models.User, error)
+	ListUsersPaginated(page, limit int, search string) ([]models.User, int64, error)
 	UpdateUser(id string, input models.UpdateUserPayload) (*models.User, error)
 	DeleteUser(id string) error
 	UpdatePassword(id string, password string) error
@@ -44,8 +44,15 @@ func (s *userService) GetUserByID(id string) (*models.User, error) {
 	return s.repo.GetByID(id)
 }
 
-func (s *userService) ListUsers() ([]models.User, error) {
-	return s.repo.List()
+func (s *userService) ListUsersPaginated(page, limit int, search string) ([]models.User, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.ListPaginated(limit, offset, search)
 }
 
 func (s *userService) UpdateUser(id string, input models.UpdateUserPayload) (*models.User, error) {

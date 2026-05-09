@@ -11,9 +11,12 @@ import (
 // ProductDocumentService interface untuk service dokumen produk
 type ProductDocumentService interface {
 	ListDocuments() ([]models.ProductDocument, error)
+	ListDocumentsPaginated(page, limit int, search string) ([]models.ProductDocument, int64, error)
 	GetBulkDocuments() ([]models.ProductDocument, error)
+	GetBulkDocumentsPaginated(page, limit int, search string) ([]models.ProductDocument, int64, error)
 	GetBulkDocumentDetail(id string) (models.ProductDocument, error)
 	GetBastDocuments() ([]models.ProductDocument, error)
+	GetBastDocumentsPaginated(page, limit int, search string) ([]models.ProductDocument, int64, error)
 	GetBastRelationsDetail(id string) (map[string]interface{}, error)
 	GetBastOverview(id string) (map[string]interface{}, error)
 	GetBastPendingsByType(id string) (map[string]interface{}, error)
@@ -34,6 +37,17 @@ func (s *productDocumentService) ListDocuments() ([]models.ProductDocument, erro
 	return s.repo.FindAll()
 }
 
+func (s *productDocumentService) ListDocumentsPaginated(page, limit int, search string) ([]models.ProductDocument, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.FindAllPaginated(limit, offset, search)
+}
+
 // FinishDocument menandai dokumen selesai
 func (s *productDocumentService) FinishDocument(id string) error {
 	now := time.Now()
@@ -48,6 +62,17 @@ func (s *productDocumentService) GetBulkDocuments() ([]models.ProductDocument, e
 	return s.repo.FindByType("bulk")
 }
 
+func (s *productDocumentService) GetBulkDocumentsPaginated(page, limit int, search string) ([]models.ProductDocument, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.FindByTypePaginated("bulk", limit, offset, search)
+}
+
 // GetBulkDocumentDetail mengambil detail dokumen bulk berdasarkan ID
 func (s *productDocumentService) GetBulkDocumentDetail(id string) (models.ProductDocument, error) {
 	return s.repo.FindBulkDetailByID(id)
@@ -56,6 +81,17 @@ func (s *productDocumentService) GetBulkDocumentDetail(id string) (models.Produc
 // GetBastDocuments mengambil dokumen dengan tipe bast
 func (s *productDocumentService) GetBastDocuments() ([]models.ProductDocument, error) {
 	return s.repo.FindByType("bast")
+}
+
+func (s *productDocumentService) GetBastDocumentsPaginated(page, limit int, search string) ([]models.ProductDocument, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.FindByTypePaginated("bast", limit, offset, search)
 }
 
 // GetBastRelationsDetail mengambil detail relasi bast (pending & scanned)

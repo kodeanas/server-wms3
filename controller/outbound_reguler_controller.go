@@ -18,15 +18,28 @@ func NewOutboundRegulerController(service services.OutboundRegulerService) *Outb
 
 // GET /buyers
 func (ctrl *OutboundRegulerController) GetBuyers(c *gin.Context) {
-	res := ctrl.service.GetBuyers()
-	utils.SendSuccess(c, res, "", nil, http.StatusOK)
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	buyers, total, err := ctrl.service.GetBuyersPaginated(pg.Page, pg.Limit, search)
+	if err != nil {
+		utils.SendError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.SendListSuccess(c, buyers, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // GET /buyers/:id/class-info
 func (ctrl *OutboundRegulerController) GetBuyerClassInfo(c *gin.Context) {
 	id := c.Param("id")
 	res := ctrl.service.GetBuyerClassInfo(id)
-	utils.SendSuccess(c, res, "", nil, http.StatusOK)
+	if m, ok := res.(map[string]interface{}); ok {
+		if errMsg, exists := m["error"]; exists {
+			utils.SendError(c, http.StatusBadRequest, errMsg.(string))
+			return
+		}
+	}
+	utils.SendItemSuccess(c, res, "", http.StatusOK)
 }
 
 // POST /outbound-reguler/scan
@@ -131,13 +144,20 @@ func (ctrl *OutboundRegulerController) GetOrderDetail(c *gin.Context) {
 			return
 		}
 	}
-	utils.SendSuccess(c, res, "", nil, http.StatusOK)
+	utils.SendItemSuccess(c, res, "", http.StatusOK)
 }
 
 // GET /outbound-reguler/orders
 func (ctrl *OutboundRegulerController) ListOrders(c *gin.Context) {
-	res := ctrl.service.ListOrders()
-	utils.SendSuccess(c, res, "List orders", nil, http.StatusOK)
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	orders, total, err := ctrl.service.ListOrdersPaginated(pg.Page, pg.Limit, search)
+	if err != nil {
+		utils.SendError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.SendListSuccess(c, orders, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // DELETE /outbound-reguler/discount/order/:order_id

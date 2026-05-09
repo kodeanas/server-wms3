@@ -11,6 +11,7 @@ import (
 
 type OutboundRegulerService interface {
 	GetBuyers() interface{}
+	GetBuyersPaginated(page, limit int, search string) ([]models.Buyer, int64, error)
 	GetBuyerClassInfo(id string) interface{}
 	ScanProduct(ctx interface{}) interface{}
 	DeleteProduct(id string) interface{}
@@ -20,6 +21,7 @@ type OutboundRegulerService interface {
 	CompleteOrder(ctx interface{}) interface{}
 	GetOrderDetail(orderID string) interface{}
 	ListOrders() interface{}
+	ListOrdersPaginated(page, limit int, search string) ([]models.Order, int64, error)
 	DeleteAllDiscountsByOrderID(orderID string) interface{}
 }
 
@@ -62,6 +64,17 @@ func (s *outboundRegulerService) GetBuyers() interface{} {
 		return map[string]interface{}{"error": err.Error()}
 	}
 	return buyers
+}
+
+func (s *outboundRegulerService) GetBuyersPaginated(page, limit int, search string) ([]models.Buyer, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.buyerRepo.ListPaginated(limit, offset, search)
 }
 func (s *outboundRegulerService) GetBuyerClassInfo(id string) interface{} {
 	// Ambil buyer
@@ -551,6 +564,17 @@ func (s *outboundRegulerService) ListOrders() interface{} {
 		return map[string]interface{}{"error": err.Error()}
 	}
 	return orders
+}
+
+func (s *outboundRegulerService) ListOrdersPaginated(page, limit int, search string) ([]models.Order, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.orderRepo.ListAllPaginated(limit, offset, search)
 }
 
 // Delete all discounts/vouchers for an order and recalculate grand total

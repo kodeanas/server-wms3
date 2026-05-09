@@ -31,12 +31,15 @@ func (ctl *RackStagingStickerController) Create(c *gin.Context) {
 
 // List all rackStagingSticker
 func (ctl *RackStagingStickerController) List(c *gin.Context) {
-	bags, err := ctl.service.ListBags()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	bags, total, err := ctl.service.ListBagsPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.SendSuccess(c, bags, "List rackStagingSticker", nil, http.StatusOK)
+	utils.SendListSuccess(c, bags, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // Get detail rackStagingSticker
@@ -47,7 +50,7 @@ func (ctl *RackStagingStickerController) GetDetail(c *gin.Context) {
 		utils.SendError(c, http.StatusNotFound, err.Error())
 		return
 	}
-	utils.SendSuccess(c, bag, "Detail rackStagingSticker", nil, http.StatusOK)
+	utils.SendItemSuccess(c, bag, "", http.StatusOK)
 }
 
 // Scan product to rackStagingSticker (Bag) - hanya location staging_sticker
@@ -96,10 +99,13 @@ func (ctl *RackStagingStickerController) ListByBagID(c *gin.Context) {
 		utils.SendError(c, http.StatusBadRequest, "bagID is required")
 		return
 	}
-	products, err := ctl.service.ListProductsByBagID(bagID)
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	products, total, err := ctl.service.ListProductsByBagIDPaginated(bagID, pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.SendSuccess(c, products, "List produk dalam bag", nil, http.StatusOK)
+	utils.SendListSuccess(c, products, pg.Page, pg.Limit, total, "", http.StatusOK)
 }

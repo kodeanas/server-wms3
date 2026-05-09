@@ -11,7 +11,9 @@ import (
 type ProductMasterRepository interface {
 	FindByLocation(location string) ([]models.ProductMaster, error)
 	FindStagingReguler() ([]dto.ProductMasterRegulerResponse, error)
+	FindStagingRegulerPaginated(limit, offset int, search string) ([]dto.ProductMasterRegulerResponse, int64, error)
 	FindStagingSticker() ([]dto.ProductMasterStickerResponse, error)
+	FindStagingStickerPaginated(limit, offset int, search string) ([]dto.ProductMasterStickerResponse, int64, error)
 	FindDetailByID(id string) (*dto.ProductMasterDetailResponse, error)
 	FindByID(id string) (*models.ProductMaster, error)
 	FindStickerByPrice(price float64) (*models.Sticker, error)
@@ -22,9 +24,11 @@ type ProductMasterRepository interface {
 	FindByBarcodeWarehouse(barcode string) (*models.ProductMaster, error)
 	UpdateRackStagingID(id string, rackStagingID string) error
 	FindAllByRackStagingID(rackStagingID string) ([]models.ProductMaster, error)
+	FindAllByRackStagingIDPaginated(rackStagingID string, limit, offset int, search string) ([]models.ProductMaster, int64, error)
 	MoveAllToDisplay(rackStagingID, rackDisplayID string) error
 	UpdateBagID(productID string, bagID string) error
 	FindByBagID(bagID string) ([]models.ProductMaster, error)
+	FindByBagIDPaginated(bagID string, limit, offset int, search string) ([]models.ProductMaster, int64, error)
 }
 
 type productMasterRepository struct {
@@ -108,6 +112,48 @@ func (r *productMasterRepository) FindStagingReguler() ([]dto.ProductMasterRegul
 	return masters, err
 }
 
+func (r *productMasterRepository) FindStagingRegulerPaginated(limit, offset int, search string) ([]dto.ProductMasterRegulerResponse, int64, error) {
+	var (
+		masters []dto.ProductMasterRegulerResponse
+		total   int64
+	)
+	base := r.db.Table("product_masters pm").
+		Joins("LEFT JOIN categories ON categories.id = pm.category_id::uuid").
+		Where("pm.location = ?", "staging_reguler")
+	if search != "" {
+		like := "%" + search + "%"
+		base = base.Where("pm.barcode_warehouse ILIKE ? OR pm.name_warehouse ILIKE ? OR pm.barcode ILIKE ? OR pm.name ILIKE ?", like, like, like, like)
+	}
+	if err := base.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := base.
+		Select(`
+			pm.id,
+			pm.document_id,
+			pm.barcode,
+			pm.barcode_warehouse,
+			pm.name,
+			pm.name_warehouse,
+			pm.item,
+			pm.item_warehouse,
+			pm.price,
+			pm.price_warehouse,
+			pm.category_id,
+			pm.product_pending_id,
+			pm.is_sku,
+			pm.location,
+			pm.type_out,
+			pm.created_at,
+			pm.updated_at,
+			categories.name AS category_name
+		`).
+		Order("pm.created_at DESC").
+		Limit(limit).Offset(offset).
+		Scan(&masters).Error
+	return masters, total, err
+}
+
 func (r *productMasterRepository) FindStagingSticker() ([]dto.ProductMasterStickerResponse, error) {
 	var masters []dto.ProductMasterStickerResponse
 	err := r.db.Table("product_masters pm").
@@ -137,6 +183,49 @@ func (r *productMasterRepository) FindStagingSticker() ([]dto.ProductMasterStick
 		Order("pm.created_at DESC").
 		Scan(&masters).Error
 	return masters, err
+}
+
+func (r *productMasterRepository) FindStagingStickerPaginated(limit, offset int, search string) ([]dto.ProductMasterStickerResponse, int64, error) {
+	var (
+		masters []dto.ProductMasterStickerResponse
+		total   int64
+	)
+	base := r.db.Table("product_masters pm").
+		Joins("LEFT JOIN stickers ON stickers.id = pm.sticker_id::uuid").
+		Where("pm.location = ?", "staging_sticker")
+	if search != "" {
+		like := "%" + search + "%"
+		base = base.Where("pm.barcode_warehouse ILIKE ? OR pm.name_warehouse ILIKE ? OR pm.barcode ILIKE ? OR pm.name ILIKE ?", like, like, like, like)
+	}
+	if err := base.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := base.
+		Select(`
+			pm.id,
+			pm.document_id,
+			pm.barcode,
+			pm.barcode_warehouse,
+			pm.name,
+			pm.name_warehouse,
+			pm.item,
+			pm.item_warehouse,
+			pm.price,
+			pm.price_warehouse,
+			pm.sticker_id,
+			pm.product_pending_id,
+			pm.is_sku,
+			pm.location,
+			pm.type_out,
+			pm.created_at,
+			pm.updated_at,
+			stickers.name AS sticker_name,
+			stickers.code_hex AS sticker_code_hex
+		`).
+		Order("pm.created_at DESC").
+		Limit(limit).Offset(offset).
+		Scan(&masters).Error
+	return masters, total, err
 }
 
 type productMasterDetailRow struct {
@@ -308,6 +397,27 @@ func (r *productMasterRepository) FindAllByRackStagingID(rackStagingID string) (
 	return masters, err
 }
 
+// Find all product masters by rack staging id with pagination & search
+func (r *productMasterRepository) FindAllByRackStagingIDPaginated(rackStagingID string, limit, offset int, search string) ([]models.ProductMaster, int64, error) {
+	var (
+		masters []models.ProductMaster
+		total   int64
+	)
+	query := r.db.Model(&models.ProductMaster{}).
+		Where("rack_staging_id = ? AND deleted_at IS NULL", rackStagingID)
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("barcode_warehouse ILIKE ? OR name_warehouse ILIKE ? OR barcode ILIKE ? OR name ILIKE ?", like, like, like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&masters).Error; err != nil {
+		return nil, 0, err
+	}
+	return masters, total, nil
+}
+
 // Update massal product master pada rack staging: set rack_display_id dan location
 func (r *productMasterRepository) MoveAllToDisplay(rackStagingID, rackDisplayID string) error {
 	return r.db.Model(&models.ProductMaster{}).
@@ -330,4 +440,25 @@ func (r *productMasterRepository) FindByBagID(bagID string) ([]models.ProductMas
 	var masters []models.ProductMaster
 	err := r.db.Where("bag_id = ? AND deleted_at IS NULL", bagID).Order("created_at DESC").Find(&masters).Error
 	return masters, err
+}
+
+// List all product master in a bag with pagination & search
+func (r *productMasterRepository) FindByBagIDPaginated(bagID string, limit, offset int, search string) ([]models.ProductMaster, int64, error) {
+	var (
+		masters []models.ProductMaster
+		total   int64
+	)
+	query := r.db.Model(&models.ProductMaster{}).
+		Where("bag_id = ? AND deleted_at IS NULL", bagID)
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("barcode_warehouse ILIKE ? OR name_warehouse ILIKE ? OR barcode ILIKE ? OR name ILIKE ?", like, like, like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&masters).Error; err != nil {
+		return nil, 0, err
+	}
+	return masters, total, nil
 }

@@ -96,6 +96,17 @@ func (s *RackStagingService) ListAllRackStaging() ([]models.RackStaging, error) 
 	return s.RackStagingRepo.FindAllRackStaging()
 }
 
+func (s *RackStagingService) ListAllRackStagingPaginated(page, limit int, search string) ([]models.RackStaging, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.RackStagingRepo.FindAllRackStagingPaginated(limit, offset, search)
+}
+
 // Finish rack staging: set is_moved, update semua product master ke display
 func (s *RackStagingService) FinishRackStaging(rackStagingID string, productMasterRepo repositories.ProductMasterRepository) error {
 	rack, err := s.RackStagingRepo.FindByID(rackStagingID)

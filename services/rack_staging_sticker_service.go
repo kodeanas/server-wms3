@@ -14,14 +14,27 @@ type RackStagingStickerService interface {
 	CreateStickerBag(userID string) (*models.Bag, error)
 	GetBagByID(id string) (*models.Bag, error)
 	ListBags() ([]models.Bag, error)
+	ListBagsPaginated(page, limit int, search string) ([]models.Bag, int64, error)
 	GetProductByBarcodeWarehouse(barcode string) (*models.ProductMaster, error)
 	SetBag(productID string, bagID string) error
 	ListProductsByBagID(bagID string) ([]models.ProductMaster, error)
+	ListProductsByBagIDPaginated(bagID string, page, limit int, search string) ([]models.ProductMaster, int64, error)
 	GetBagDetail(bagID string) (*dto.RackStagingDetailResponse, error)
 }
 
 func (s *rackStagingStickerService) ListProductsByBagID(bagID string) ([]models.ProductMaster, error) {
 	return s.productMasterRepo.FindByBagID(bagID)
+}
+
+func (s *rackStagingStickerService) ListProductsByBagIDPaginated(bagID string, page, limit int, search string) ([]models.ProductMaster, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.productMasterRepo.FindByBagIDPaginated(bagID, limit, offset, search)
 }
 
 type rackStagingStickerService struct {
@@ -62,6 +75,17 @@ func (s *rackStagingStickerService) GetBagByID(id string) (*models.Bag, error) {
 
 func (s *rackStagingStickerService) ListBags() ([]models.Bag, error) {
 	return s.repo.FindByType("sticker")
+}
+
+func (s *rackStagingStickerService) ListBagsPaginated(page, limit int, search string) ([]models.Bag, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.FindByTypePaginated("sticker", limit, offset, search)
 }
 
 func (s *rackStagingStickerService) GetProductByBarcodeWarehouse(barcode string) (*models.ProductMaster, error) {
