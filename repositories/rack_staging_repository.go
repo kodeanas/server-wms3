@@ -52,6 +52,26 @@ func (r *RackStagingRepository) FindAllRackStaging() ([]models.RackStaging, erro
 	return racks, err
 }
 
+// Find all rack stagings with pagination & search
+func (r *RackStagingRepository) FindAllRackStagingPaginated(limit, offset int, search string) ([]models.RackStaging, int64, error) {
+	var (
+		racks []models.RackStaging
+		total int64
+	)
+	query := r.DB.Model(&models.RackStaging{}).Where("deleted_at IS NULL")
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("name ILIKE ? OR code ILIKE ?", like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&racks).Error; err != nil {
+		return nil, 0, err
+	}
+	return racks, total, nil
+}
+
 // Set is_moved = true untuk rack staging tertentu
 func (r *RackStagingRepository) SetIsMoved(rackStagingID string) error {
 	return r.DB.Model(&models.RackStaging{}).

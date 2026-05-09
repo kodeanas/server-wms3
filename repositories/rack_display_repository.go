@@ -24,6 +24,25 @@ func (r *RackDisplayRepository) FindAll() ([]models.RackDisplay, error) {
 	return racks, err
 }
 
+func (r *RackDisplayRepository) FindAllPaginated(limit, offset int, search string) ([]models.RackDisplay, int64, error) {
+	var (
+		racks []models.RackDisplay
+		total int64
+	)
+	query := r.DB.Model(&models.RackDisplay{}).Where("deleted_at IS NULL")
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("name ILIKE ? OR code ILIKE ?", like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&racks).Error; err != nil {
+		return nil, 0, err
+	}
+	return racks, total, nil
+}
+
 func (r *RackDisplayRepository) FindByID(id string) (*models.RackDisplay, error) {
 	var rack models.RackDisplay
 	err := r.DB.Where("id = ? AND deleted_at IS NULL", id).First(&rack).Error

@@ -10,6 +10,7 @@ type UserRepository interface {
 	Create(user *models.User) error
 	GetByID(id string) (*models.User, error)
 	List() ([]models.User, error)
+	ListPaginated(limit, offset int, search string) ([]models.User, int64, error)
 	Update(user *models.User) error
 	Delete(id string) error
 	UpdatePassword(id string, password string) error
@@ -39,6 +40,25 @@ func (r *userRepository) List() ([]models.User, error) {
 	var users []models.User
 	err := r.db.Find(&users).Error
 	return users, err
+}
+
+func (r *userRepository) ListPaginated(limit, offset int, search string) ([]models.User, int64, error) {
+	var (
+		users []models.User
+		total int64
+	)
+	query := r.db.Model(&models.User{})
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("name ILIKE ? OR email ILIKE ? OR phone ILIKE ?", like, like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+	return users, total, nil
 }
 
 func (r *userRepository) Update(user *models.User) error {

@@ -16,6 +16,7 @@ type InboundSKUService interface {
 	CrosscheckPending(pendingID string, itemGood, itemDamaged int) error
 	FinishInboundSKU(documentID string) error
 	ListSKUProductDocuments() ([]models.ProductDocument, error)
+	ListSKUProductDocumentsPaginated(page, limit int, search string) ([]models.ProductDocument, int64, error)
 	GetPendingByID(pendingID string) (*models.ProductPending, error)
 	GetDocumentByID(documentID string) (*models.ProductDocument, error)
 }
@@ -117,6 +118,17 @@ func (s *inboundSKUService) UploadExcelAndCreatePendings(file interface{}, fileT
 
 func (s *inboundSKUService) ListSKUProductDocuments() ([]models.ProductDocument, error) {
 	return s.productDocumentRepo.FindByType("sku")
+}
+
+func (s *inboundSKUService) ListSKUProductDocumentsPaginated(page, limit int, search string) ([]models.ProductDocument, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.productDocumentRepo.FindByTypePaginated("sku", limit, offset, search)
 }
 
 func parseFloat(s string) float64 {

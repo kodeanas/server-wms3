@@ -9,9 +9,10 @@ import (
 
 type ProductDocumentRepository interface {
 	FindAll() ([]models.ProductDocument, error)
+	FindAllPaginated(limit, offset int, search string) ([]models.ProductDocument, int64, error)
 	Create(doc *models.ProductDocument) error
-	// Tambahkan baris di bawah ini:
 	FindByType(docType string) ([]models.ProductDocument, error)
+	FindByTypePaginated(docType string, limit, offset int, search string) ([]models.ProductDocument, int64, error)
 	FindBulkDetailByID(id string) (models.ProductDocument, error)
 	FindBastByID(id string) (models.ProductDocument, error)
 	FindBastRelationsByID(id string) (models.ProductDocument, error)
@@ -49,10 +50,48 @@ func (r *productDocumentRepository) FindByType(docType string) ([]models.Product
 	return documents, err
 }
 
+func (r *productDocumentRepository) FindByTypePaginated(docType string, limit, offset int, search string) ([]models.ProductDocument, int64, error) {
+	var (
+		documents []models.ProductDocument
+		total     int64
+	)
+	query := r.db.Model(&models.ProductDocument{}).Where("type = ?", docType)
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("code ILIKE ? OR file_name ILIKE ? OR supplier ILIKE ?", like, like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&documents).Error; err != nil {
+		return nil, 0, err
+	}
+	return documents, total, nil
+}
+
 func (r *productDocumentRepository) FindAll() ([]models.ProductDocument, error) {
 	var docs []models.ProductDocument
 	err := r.db.Order("created_at DESC").Find(&docs).Error
 	return docs, err
+}
+
+func (r *productDocumentRepository) FindAllPaginated(limit, offset int, search string) ([]models.ProductDocument, int64, error) {
+	var (
+		documents []models.ProductDocument
+		total     int64
+	)
+	query := r.db.Model(&models.ProductDocument{})
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("code ILIKE ? OR file_name ILIKE ? OR supplier ILIKE ?", like, like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&documents).Error; err != nil {
+		return nil, 0, err
+	}
+	return documents, total, nil
 }
 
 func (r *productDocumentRepository) FindSkuDetailByID(id string) (models.ProductDocument, error) {

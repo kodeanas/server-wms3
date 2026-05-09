@@ -43,17 +43,20 @@ func (c *RackStagingController) GetDetail(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	utils.SendSuccess(ctx, result, "Rack staging detail didapatkan", nil, http.StatusOK)
+	utils.SendItemSuccess(ctx, result, "", http.StatusOK)
 }
 
 // List all rack stagings
 func (c *RackStagingController) ListAll(ctx *gin.Context) {
-	racks, err := c.Service.ListAllRackStaging()
+	pg := utils.ParsePagination(ctx, 10)
+	search := ctx.Query("search")
+
+	racks, total, err := c.Service.ListAllRackStagingPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(ctx, 500, err.Error())
 		return
 	}
-	utils.SendSuccess(ctx, racks, "List semua rack stagings", nil, http.StatusOK)
+	utils.SendListSuccess(ctx, racks, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // Finish rack staging: set is_moved dan update semua product master ke display

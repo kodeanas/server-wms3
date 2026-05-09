@@ -37,12 +37,15 @@ func (ctl *RackDisplayController) Create(c *gin.Context) {
 }
 
 func (ctl *RackDisplayController) GetAll(c *gin.Context) {
-	racks, err := ctl.Service.GetAll()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	racks, total, err := ctl.Service.GetAllPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	utils.SendSuccess(c, racks, "Rack displays retrieved successfully", nil, http.StatusOK)
+	utils.SendListSuccess(c, racks, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 func (ctl *RackDisplayController) GetByID(c *gin.Context) {
@@ -52,7 +55,7 @@ func (ctl *RackDisplayController) GetByID(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	utils.SendSuccess(c, rack, "Rack display retrieved successfully", nil, http.StatusOK)
+	utils.SendItemSuccess(c, rack, "", http.StatusOK)
 }
 
 func (ctl *RackDisplayController) Update(c *gin.Context) {
@@ -88,5 +91,5 @@ func (ctl *RackDisplayController) GetDetail(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	utils.SendSuccess(c, detail, "Rack display detail retrieved successfully", nil, http.StatusOK)
+	utils.SendItemSuccess(c, detail, "", http.StatusOK)
 }

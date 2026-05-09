@@ -22,26 +22,34 @@ func NewProductMasterController(service services.ProductMasterService) *ProductM
 }
 
 func (ctl *ProductMasterController) ListStagingReguler(c *gin.Context) {
-	masters, err := ctl.service.GetStagingReguler()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	masters, total, err := ctl.service.GetStagingRegulerPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
-	utils.SendSuccess(c, masters, "List product master staging_reguler", nil, http.StatusOK)
+	if masters == nil {
+		masters = make([]dto.ProductMasterRegulerResponse, 0)
+	}
+	utils.SendListSuccess(c, masters, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // ListStagingSticker hanya menampilkan data dengan location = 'staging_sticker'
 func (ctl *ProductMasterController) ListStagingSticker(c *gin.Context) {
-	masters, err := ctl.service.GetStagingSticker()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	masters, total, err := ctl.service.GetStagingStickerPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
-	// Jika hasil kosong, kirim array kosong, bukan null
 	if masters == nil {
 		masters = make([]dto.ProductMasterStickerResponse, 0)
 	}
-	utils.SendSuccess(c, masters, "List product master staging_sticker", nil, http.StatusOK)
+	utils.SendListSuccess(c, masters, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 func (ctl *ProductMasterController) GetDetail(c *gin.Context) {
@@ -61,7 +69,7 @@ func (ctl *ProductMasterController) GetDetail(c *gin.Context) {
 		return
 	}
 
-	utils.SendSuccess(c, master, "Detail product master", nil, http.StatusOK)
+	utils.SendItemSuccess(c, master, "", http.StatusOK)
 }
 
 func (ctl *ProductMasterController) UpdateStaging(c *gin.Context) {
@@ -155,42 +163,45 @@ func (ctl *ProductMasterController) ScanBarcodeWarehouse(c *gin.Context) {
 
 // List all product master in a rack staging
 func (ctl *ProductMasterController) ListByRackStagingID(c *gin.Context) {
-	       rackStagingID := c.Param("rackStagingID")
-	       if rackStagingID == "" {
-		       utils.SendError(c, 400, "Kolom rackStagingID kosong")
-		       return
-	       }
-	       masters, err := ctl.service.ListByRackStagingID(rackStagingID)
-	       if err != nil {
-		       utils.SendError(c, 500, err.Error())
-		       return
-	       }
-	       // Mapping ke response minimalis dan resolve category_name
-	       var resp []dto.ProductMasterRackStagingResponse
-	       catRepo := repositories.NewCategoryRepository(config.DB)
-	       for _, m := range masters {
-		       var categoryName *string
-		       if m.CategoryID != nil {
-			       cat, err := catRepo.GetByID(*m.CategoryID)
-			       if err == nil && cat != nil {
-				       categoryName = &cat.Name
-			       }
-		       }
-		       resp = append(resp, dto.ProductMasterRackStagingResponse{
-			       ID:               m.ID.String(),
-			       BarcodeWarehouse: m.BarcodeWarehouse,
-			       NameWarehouse:    m.NameWarehouse,
-			       ItemWarehouse:    m.ItemWarehouse,
-			       PriceWarehouse:   m.PriceWarehouse,
-			       CategoryID:       m.CategoryID,
-			       CategoryName:     categoryName,
-			       StickerID:        m.StickerID,
-			       CreatedAt:        m.CreatedAt,
-			       UpdatedAt:        m.UpdatedAt,
-			       DeletedAt:        m.DeletedAt,
-		       })
-	       }
-	       utils.SendSuccess(c, resp, "List produk di rack staging", nil, http.StatusOK)
+	rackStagingID := c.Param("rackStagingID")
+	if rackStagingID == "" {
+		utils.SendError(c, 400, "Kolom rackStagingID kosong")
+		return
+	}
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	masters, total, err := ctl.service.ListByRackStagingIDPaginated(rackStagingID, pg.Page, pg.Limit, search)
+	if err != nil {
+		utils.SendError(c, 500, err.Error())
+		return
+	}
+	// Mapping ke response minimalis dan resolve category_name
+	resp := make([]dto.ProductMasterRackStagingResponse, 0, len(masters))
+	catRepo := repositories.NewCategoryRepository(config.DB)
+	for _, m := range masters {
+		var categoryName *string
+		if m.CategoryID != nil {
+			cat, err := catRepo.GetByID(*m.CategoryID)
+			if err == nil && cat != nil {
+				categoryName = &cat.Name
+			}
+		}
+		resp = append(resp, dto.ProductMasterRackStagingResponse{
+			ID:               m.ID.String(),
+			BarcodeWarehouse: m.BarcodeWarehouse,
+			NameWarehouse:    m.NameWarehouse,
+			ItemWarehouse:    m.ItemWarehouse,
+			PriceWarehouse:   m.PriceWarehouse,
+			CategoryID:       m.CategoryID,
+			CategoryName:     categoryName,
+			StickerID:        m.StickerID,
+			CreatedAt:        m.CreatedAt,
+			UpdatedAt:        m.UpdatedAt,
+			DeletedAt:        m.DeletedAt,
+		})
+	}
+	utils.SendListSuccess(c, resp, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // Helper untuk validasi rack staging sudah di-lock

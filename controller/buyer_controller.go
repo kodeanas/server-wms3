@@ -46,17 +46,20 @@ func (ctrl *BuyerController) GetBuyerByID(c *gin.Context) {
 		utils.SendError(c, 404, err.Error())
 		return
 	}
-	utils.SendSuccess(c, buyer, "", nil, http.StatusOK)
+	utils.SendItemSuccess(c, buyer, "", http.StatusOK)
 }
 
 // ListBuyers endpoint.
 func (ctrl *BuyerController) ListBuyers(c *gin.Context) {
-	buyers, err := ctrl.service.ListBuyers()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	buyers, total, err := ctrl.service.ListBuyersPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
-	var resp []dto.BuyerResponse
+	resp := make([]dto.BuyerResponse, 0, len(buyers))
 	for _, b := range buyers {
 		var class *dto.ClassSimpleResponse
 		if b.Class != nil {
@@ -78,7 +81,7 @@ func (ctrl *BuyerController) ListBuyers(c *gin.Context) {
 			Class:     class,
 		})
 	}
-	utils.SendSuccess(c, resp, "", nil, http.StatusOK)
+	utils.SendListSuccess(c, resp, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // UpdateBuyer endpoint.

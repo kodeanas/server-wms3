@@ -19,12 +19,15 @@ type UpdateProductMasterStagingPayload struct {
 type ProductMasterService interface {
 	GetByLocation(location string) ([]models.ProductMaster, error)
 	GetStagingReguler() ([]dto.ProductMasterRegulerResponse, error)
+	GetStagingRegulerPaginated(page, limit int, search string) ([]dto.ProductMasterRegulerResponse, int64, error)
 	GetStagingSticker() ([]dto.ProductMasterStickerResponse, error)
+	GetStagingStickerPaginated(page, limit int, search string) ([]dto.ProductMasterStickerResponse, int64, error)
 	GetDetailByID(id string) (*dto.ProductMasterDetailResponse, error)
 	UpdateStaging(id string, input UpdateProductMasterStagingPayload) (*models.ProductMaster, error)
 	GetByBarcodeWarehouse(barcode string) (*models.ProductMaster, error)
 	SetRackStaging(id string, rackStagingID string) error
 	ListByRackStagingID(rackStagingID string) ([]models.ProductMaster, error)
+	ListByRackStagingIDPaginated(rackStagingID string, page, limit int, search string) ([]models.ProductMaster, int64, error)
 }
 
 type productMasterService struct {
@@ -46,9 +49,31 @@ func (s *productMasterService) GetStagingReguler() ([]dto.ProductMasterRegulerRe
 	return s.repo.FindStagingReguler()
 }
 
+func (s *productMasterService) GetStagingRegulerPaginated(page, limit int, search string) ([]dto.ProductMasterRegulerResponse, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.FindStagingRegulerPaginated(limit, offset, search)
+}
+
 // GetStagingSticker mengambil data staging sticker
 func (s *productMasterService) GetStagingSticker() ([]dto.ProductMasterStickerResponse, error) {
 	return s.repo.FindStagingSticker()
+}
+
+func (s *productMasterService) GetStagingStickerPaginated(page, limit int, search string) ([]dto.ProductMasterStickerResponse, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.FindStagingStickerPaginated(limit, offset, search)
 }
 
 // GetDetailByID mengambil detail product master berdasarkan ID
@@ -129,4 +154,15 @@ func (s *productMasterService) SetRackStaging(id string, rackStagingID string) e
 // ListByRackStagingID mengambil semua product master dalam satu rack staging
 func (s *productMasterService) ListByRackStagingID(rackStagingID string) ([]models.ProductMaster, error) {
 	return s.repo.FindAllByRackStagingID(rackStagingID)
+}
+
+func (s *productMasterService) ListByRackStagingIDPaginated(rackStagingID string, page, limit int, search string) ([]models.ProductMaster, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.FindAllByRackStagingIDPaginated(rackStagingID, limit, offset, search)
 }

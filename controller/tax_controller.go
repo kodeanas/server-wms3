@@ -63,16 +63,19 @@ func (c *TaxController) GetByID(ctx *gin.Context) {
 		utils.SendError(ctx, 404, err.Error())
 		return
 	}
-	utils.SendSuccessWithMetaNull(ctx, tax, "Berhasil ambil detail tax")
+	utils.SendItemSuccess(ctx, tax, "")
 }
 
 func (c *TaxController) List(ctx *gin.Context) {
-	taxes, err := c.service.FindAll()
+	pg := utils.ParsePagination(ctx, 10)
+	search := ctx.Query("search")
+
+	taxes, total, err := c.service.FindAllPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(ctx, 500, err.Error())
 		return
 	}
-	utils.SendSuccessWithMetaNull(ctx, taxes, "Berhasil ambil list tax")
+	utils.SendListSuccess(ctx, taxes, pg.Page, pg.Limit, total, "")
 }
 
 func (c *TaxController) GetActive(ctx *gin.Context) {
@@ -81,5 +84,5 @@ func (c *TaxController) GetActive(ctx *gin.Context) {
 		utils.SendError(ctx, 404, err.Error())
 		return
 	}
-	utils.SendSuccessWithMetaNull(ctx, tax, "Berhasil ambil tax aktif")
+	utils.SendItemSuccess(ctx, tax, "Berhasil ambil tax aktif")
 }

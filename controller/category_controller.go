@@ -70,12 +70,15 @@ func (ctrl *CategoryController) CreateCategory(c *gin.Context) {
 
 // ListCategories endpoint.
 func (ctrl *CategoryController) ListCategories(c *gin.Context) {
-	categories, err := ctrl.service.ListCategories()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	categories, total, err := ctrl.service.ListCategoriesPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
-	utils.SendSuccess(c, categories, "list categories", nil, http.StatusOK)
+	utils.SendListSuccess(c, categories, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // GetCategoryByID endpoint.
@@ -86,5 +89,5 @@ func (ctrl *CategoryController) GetCategoryByID(c *gin.Context) {
 		utils.SendError(c, 404, "Category tidak ditemukan")
 		return
 	}
-	utils.SendSuccess(c, category, "Category ditemukan", nil, http.StatusOK)
+	utils.SendItemSuccess(c, category, "", http.StatusOK)
 }

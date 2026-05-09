@@ -32,10 +32,23 @@ func (r *TaxRepository) FindByID(id string) (*models.Tax, error) {
 	return &tax, err
 }
 
-func (r *TaxRepository) FindAll() ([]models.Tax, error) {
-	var taxes []models.Tax
-	err := r.DB.Find(&taxes).Error
-	return taxes, err
+func (r *TaxRepository) FindAllPaginated(limit, offset int, search string) ([]models.Tax, int64, error) {
+	var (
+		taxes []models.Tax
+		total int64
+	)
+	query := r.DB.Model(&models.Tax{})
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("name ILIKE ?", like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&taxes).Error; err != nil {
+		return nil, 0, err
+	}
+	return taxes, total, nil
 }
 
 func (r *TaxRepository) SetAllInactiveExcept(id string) error {

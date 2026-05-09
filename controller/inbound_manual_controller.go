@@ -19,31 +19,81 @@ var inboundService = services.NewInboundService(nil)
 
 func ListAllProductMastersHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var masters []models.ProductMaster
-		if err := db.Order("created_at DESC").Find(&masters).Error; err != nil {
+		pg := utils.ParsePagination(c, 10)
+		search := c.Query("search")
+
+		query := db.Model(&models.ProductMaster{})
+		if search != "" {
+			like := "%" + search + "%"
+			query = query.Where("barcode_warehouse ILIKE ? OR name_warehouse ILIKE ? OR barcode ILIKE ? OR name ILIKE ?", like, like, like, like)
+		}
+
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
 			utils.SendError(c, 500, err.Error())
 			return
 		}
-		utils.SendSuccess(c, masters, "List master data", nil, http.StatusOK)
+
+		var masters []models.ProductMaster
+		if err := query.Order("created_at DESC").Limit(pg.Limit).Offset(pg.Offset).Find(&masters).Error; err != nil {
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+		utils.SendListSuccess(c, masters, pg.Page, pg.Limit, total, "", http.StatusOK)
 	}
 }
 
 func ListAllProductPendingsHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var pendings []models.ProductPending
-		if err := db.Order("created_at DESC").Find(&pendings).Error; err != nil {
+		pg := utils.ParsePagination(c, 10)
+		search := c.Query("search")
+
+		query := db.Model(&models.ProductPending{})
+		if search != "" {
+			like := "%" + search + "%"
+			query = query.Where("barcode ILIKE ? OR name ILIKE ?", like, like)
+		}
+
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
 			utils.SendError(c, 500, err.Error())
 			return
 		}
-		utils.SendSuccess(c, pendings, "List pending data", nil, http.StatusOK)
+
+		var pendings []models.ProductPending
+		if err := query.Order("created_at DESC").Limit(pg.Limit).Offset(pg.Offset).Find(&pendings).Error; err != nil {
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+		utils.SendListSuccess(c, pendings, pg.Page, pg.Limit, total, "", http.StatusOK)
 	}
 }
 
 func ListProductManualHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var results []dto.ProductManualResponse
+		pg := utils.ParsePagination(c, 10)
+		search := c.Query("search")
 
-		err := db.Table("product_pendings pp").
+		base := db.Table("product_pendings pp").
+			Joins("LEFT JOIN product_documents pd ON pd.id = pp.document_id").
+			Joins("LEFT JOIN product_masters pm ON pm.product_pending_id = pp.id").
+			Joins("LEFT JOIN categories c ON c.id = pm.category_id").
+			Joins("LEFT JOIN stickers s ON s.id = pm.sticker_id").
+			Where("pd.type = ?", "manual")
+
+		if search != "" {
+			like := "%" + search + "%"
+			base = base.Where("pp.barcode ILIKE ? OR pp.name ILIKE ?", like, like)
+		}
+
+		var total int64
+		if err := base.Count(&total).Error; err != nil {
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+
+		var results []dto.ProductManualResponse
+		err := base.
 			Select(`
 				pp.id,
 				pp.document_id,
@@ -59,24 +109,8 @@ func ListProductManualHandler(db *gorm.DB) gin.HandlerFunc {
 				c.name AS category_name,
 				s.name AS sticker_name
 			`).
-			Joins(`
-				LEFT JOIN product_documents pd 
-				ON pd.id = pp.document_id
-			`).
-			Joins(`
-				LEFT JOIN product_masters pm 
-				ON pm.product_pending_id = pp.id
-			`).
-			Joins(`
-				LEFT JOIN categories c 
-				ON c.id = pm.category_id
-			`).
-			Joins(`
-				LEFT JOIN stickers s 
-				ON s.id = pm.sticker_id
-			`).
-			Where("pd.type = ?", "manual").
 			Order("pp.created_at DESC").
+			Limit(pg.Limit).Offset(pg.Offset).
 			Scan(&results).Error
 
 		if err != nil {
@@ -84,7 +118,7 @@ func ListProductManualHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		utils.SendSuccess(c, results, "List manual data", nil, http.StatusOK)
+		utils.SendListSuccess(c, results, pg.Page, pg.Limit, total, "", http.StatusOK)
 	}
 }
 

@@ -21,25 +21,30 @@ func NewProductDocumentController(service services.ProductDocumentService) *Prod
 }
 
 func (ctl *ProductDocumentController) ListDocuments(c *gin.Context) {
-	docs, err := ctl.service.ListDocuments()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	docs, total, err := ctl.service.ListDocumentsPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
-	utils.SendSuccess(c, docs, "List product documents", nil, http.StatusOK)
+	utils.SendListSuccess(c, docs, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 // Bulk
 // GetBulkDocuments khusus untuk ambil data dengan type bulk
 func (ctl *ProductDocumentController) GetBulkDocuments(c *gin.Context) {
-	// Memanggil method GetBulkDocuments yang kita tambahkan di service sebelumnya
-	docs, err := ctl.service.GetBulkDocuments()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	docs, total, err := ctl.service.GetBulkDocumentsPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, 500, "Gagal mengambil data bulk: "+err.Error())
 		return
 	}
 
-	utils.SendSuccess(c, docs, "List bulk product documents", nil, http.StatusOK)
+	utils.SendListSuccess(c, docs, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 func (ctl *ProductDocumentController) GetBulkDocumentDetail(c *gin.Context) {
@@ -54,19 +59,22 @@ func (ctl *ProductDocumentController) GetBulkDocumentDetail(c *gin.Context) {
 		return
 	}
 
-	utils.SendSuccess(c, doc, "Detail bulk product document", nil, http.StatusOK)
+	utils.SendItemSuccess(c, doc, "", http.StatusOK)
 }
 
 // Implementasi filter bast
 func (ctl *ProductDocumentController) GetBastDocuments(c *gin.Context) {
-	docs, err := ctl.service.GetBastDocuments()
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	docs, total, err := ctl.service.GetBastDocumentsPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(c, 500, "Gagal mengambil data bast: "+err.Error())
 		return
 	}
 
 	// Custom response: only selected fields for each document
-	var resp []dto.BastDocumentResponse
+	resp := make([]dto.BastDocumentResponse, 0, len(docs))
 	for _, doc := range docs {
 		resp = append(resp, dto.BastDocumentResponse{
 			ID:        doc.ID.String(),
@@ -82,7 +90,7 @@ func (ctl *ProductDocumentController) GetBastDocuments(c *gin.Context) {
 			DateStop:  doc.DateStop,
 		})
 	}
-	utils.SendSuccess(c, resp, "List bast product documents", nil, http.StatusOK)
+	utils.SendListSuccess(c, resp, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
 func (ctl *ProductDocumentController) GetBastRelationsDetail(c *gin.Context) {
@@ -97,7 +105,7 @@ func (ctl *ProductDocumentController) GetBastRelationsDetail(c *gin.Context) {
 		return
 	}
 
-	utils.SendSuccess(c, data, "Detail relasi bast product document", nil, http.StatusOK)
+	utils.SendItemSuccess(c, data, "", http.StatusOK)
 }
 
 func (ctl *ProductDocumentController) GetBastOverview(c *gin.Context) {
@@ -112,7 +120,7 @@ func (ctl *ProductDocumentController) GetBastOverview(c *gin.Context) {
 		return
 	}
 
-	utils.SendSuccess(c, overview, "Overview bast product document", nil, http.StatusOK)
+	utils.SendItemSuccess(c, overview, "", http.StatusOK)
 }
 
 func (ctl *ProductDocumentController) GetBastPendingByType(c *gin.Context) {
@@ -123,7 +131,7 @@ func (ctl *ProductDocumentController) GetBastPendingByType(c *gin.Context) {
 		return
 	}
 
-	utils.SendSuccess(c, grouped, "Pending bast by type", nil, http.StatusOK)
+	utils.SendItemSuccess(c, grouped, "", http.StatusOK)
 }
 
 // Finish/lock dokumen BAST (isi date_stop)
@@ -138,10 +146,13 @@ func (ctl *ProductDocumentController) FinishDocument(c *gin.Context) {
 }
 
 func (c *InboundSKUController) ListSKUProductDocuments(ctx *gin.Context) {
-	docs, err := c.Service.ListSKUProductDocuments()
+	pg := utils.ParsePagination(ctx, 10)
+	search := ctx.Query("search")
+
+	docs, total, err := c.Service.ListSKUProductDocumentsPaginated(pg.Page, pg.Limit, search)
 	if err != nil {
 		utils.SendError(ctx, 500, err.Error())
 		return
 	}
-	utils.SendSuccess(ctx, docs, "List SKU product documents", nil, http.StatusOK)
+	utils.SendListSuccess(ctx, docs, pg.Page, pg.Limit, total, "", http.StatusOK)
 }

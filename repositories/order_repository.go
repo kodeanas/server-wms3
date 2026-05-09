@@ -14,6 +14,7 @@ type OrderRepository interface {
 	CountDoneByBuyer(buyerID string) (int, error)
 	GetLastDoneByBuyer(buyerID string) (*models.Order, error)
 	ListAll(orders *[]models.Order) error
+	ListAllPaginated(limit, offset int, search string) ([]models.Order, int64, error)
 }
 
 type orderRepository struct {
@@ -61,4 +62,23 @@ func (r *orderRepository) GetLastDoneByBuyer(buyerID string) (*models.Order, err
 
 func (r *orderRepository) ListAll(orders *[]models.Order) error {
 	return r.db.Order("created_at DESC").Find(orders).Error
+}
+
+func (r *orderRepository) ListAllPaginated(limit, offset int, search string) ([]models.Order, int64, error) {
+	var (
+		orders []models.Order
+		total  int64
+	)
+	query := r.db.Model(&models.Order{})
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("code ILIKE ? OR status ILIKE ?", like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&orders).Error; err != nil {
+		return nil, 0, err
+	}
+	return orders, total, nil
 }

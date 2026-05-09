@@ -16,7 +16,7 @@ type CategoryRepository interface {
 	Create(category *models.Category) error
 	GetBySlug(slug string) (*models.Category, error)
 	GetSlugLike(slug string) ([]models.Category, error)
-	List() ([]models.Category, error)
+	ListPaginated(limit, offset int, search string) ([]models.Category, int64, error)
 	GetByID(id string) (*models.Category, error)
 	Update(category *models.Category) error
 	Delete(id string) error
@@ -61,10 +61,21 @@ func (r *categoryRepository) GetSlugLike(slug string) ([]models.Category, error)
 	return categories, nil
 }
 
-func (r *categoryRepository) List() ([]models.Category, error) {
-	var categories []models.Category
-	if err := r.db.Find(&categories).Error; err != nil {
-		return nil, err
+func (r *categoryRepository) ListPaginated(limit, offset int, search string) ([]models.Category, int64, error) {
+	var (
+		categories []models.Category
+		total      int64
+	)
+	query := r.db.Model(&models.Category{})
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("name ILIKE ? OR slug ILIKE ?", like, like)
 	}
-	return categories, nil
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&categories).Error; err != nil {
+		return nil, 0, err
+	}
+	return categories, total, nil
 }

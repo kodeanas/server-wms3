@@ -10,7 +10,7 @@ import (
 type ClassService interface {
 	CreateClass(input models.CreateClassPayload) (*models.Class, error)
 	GetClassByID(id string) (*models.Class, error)
-	ListClasses() ([]models.Class, error)
+	ListClassesPaginated(page, limit int, search string) ([]models.Class, int64, error)
 	UpdateClass(id string, input models.UpdateClassPayload) (*models.Class, error)
 	DeleteClass(id string) error
 	MoveUp(id string) error
@@ -50,8 +50,15 @@ func (s *classService) GetClassByID(id string) (*models.Class, error) {
 	return s.repo.GetByID(id)
 }
 
-func (s *classService) ListClasses() ([]models.Class, error) {
-	return s.repo.List()
+func (s *classService) ListClassesPaginated(page, limit int, search string) ([]models.Class, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.ListPaginated(limit, offset, search)
 }
 
 func (s *classService) UpdateClass(id string, input models.UpdateClassPayload) (*models.Class, error) {

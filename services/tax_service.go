@@ -46,8 +46,15 @@ func (s *TaxService) FindByID(id string) (*models.Tax, error) {
 	return s.repo.FindByID(id)
 }
 
-func (s *TaxService) FindAll() ([]models.Tax, error) {
-	return s.repo.FindAll()
+func (s *TaxService) FindAllPaginated(page, limit int, search string) ([]models.Tax, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.FindAllPaginated(limit, offset, search)
 }
 
 func (s *TaxService) FindActive() (*models.Tax, error) {

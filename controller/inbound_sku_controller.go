@@ -107,10 +107,10 @@ func InboundSKUGetDocumentHandler(db *gorm.DB) gin.HandlerFunc {
 			})
 		}
 
-		utils.SendSuccess(c, gin.H{
+		utils.SendItemSuccess(c, gin.H{
 			"document":        docDTO,
 			"product_pending": productsDTO,
-		}, "OK", nil, 200)
+		}, "", 200)
 	}
 }
 
