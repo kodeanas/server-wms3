@@ -45,3 +45,20 @@ type OutboundRegulerOrderDetail struct {
 	GrandTotal     float64               `json:"grand_total"`
 	CreatedAt      string                `json:"created_at"`
 }
+
+type OutboundRegulerListResponse struct {
+	OrderID    string  `json:"order_id"`
+	Code       string  `json:"code"`
+	Type       string  `json:"type"`
+	BuyerName  string  `json:"buyer_name"`
+	ClassName  string  `json:"class_name"`
+	UserID     string  `json:"user_id"`
+	Status     string  `json:"status"`
+	IsTax      bool    `json:"is_tax"`
+	Tax        float64 `json:"tax"`
+	TaxValue   float64 `json:"tax_value"`
+	TotalBox   int     `json:"total_box"`
+	PriceBox   float64 `json:"price_box"`
+	GrandTotal float64 `json:"grand_total"`
+	CreatedAt  string  `json:"created_at"`
+}

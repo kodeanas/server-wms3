@@ -22,3 +22,14 @@ type RackStagingResponse struct {
 	CreatedAt     string `json:"created_at"`
 	UpdatedAt     string `json:"updated_at"`
 }
+
+type RackStagingListResponse struct {
+	ID              string `json:"id"`
+	RackDisplayID   string `json:"rack_display_id"`
+	RackDisplayName string `json:"rack_display_name"`
+	Code            string `json:"code"`
+	Name            string `json:"name"`
+	IsMoved         bool   `json:"is_moved"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
+}

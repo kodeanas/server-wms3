@@ -74,10 +74,15 @@ func SetupRoutes(r *gin.Engine) {
 	rackDisplayService := services.NewRackDisplayService(rackDisplayRepo)
 	rackDisplayController := controller.NewRackDisplayController(rackDisplayService)
 
-	//RWholesale Bag
+	//Wholesale Bag
 	bagRepo := repositories.NewBagRepository(config.DB)
 	BagService := services.NewWholesaleBagService(bagRepo, productMasterRepo)
 	BagController := controller.NewWholesaleBagController(BagService)
+
+	//Cargo
+	cargoRepo := repositories.NewCargoRepository(config.DB)
+	cargoService := services.NewCargoService(cargoRepo, bagRepo)
+	cargoController := controller.NewCargoController(cargoService)
 
 	//Rack Staging Reguler
 	rackStagingRepo := repositories.NewRackStagingRepository(config.DB)
@@ -219,6 +224,13 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/wholesale-bags/:bagID/detail", BagController.GetDetail)
 		api.GET("/wholesale-bags/:bagID/products", BagController.ListByBagID)
 		api.POST("/wholesale-bags/:bagID/scanner/scan-barcode", BagController.ScanBarcodeWarehouse)
+
+		// Cargo
+		api.POST("/cargos", cargoController.Create)
+		api.GET("/cargos", cargoController.List)
+		api.GET("/cargos/:id", cargoController.GetDetail)
+		api.POST("/cargos/:id/scan", cargoController.ScanBag)
+		api.POST("/cargos/:id/finish", cargoController.Finish)
 
 		// Outbound Reguler
 		api.GET("/outbound-reguler/buyers", outboundRegulerController.GetBuyers)
