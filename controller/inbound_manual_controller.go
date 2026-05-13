@@ -39,7 +39,52 @@ func ListAllProductMastersHandler(db *gorm.DB) gin.HandlerFunc {
 			utils.SendError(c, 500, err.Error())
 			return
 		}
-		utils.SendListSuccess(c, masters, pg.Page, pg.Limit, total, "", http.StatusOK)
+
+		// Transform response dengan category name dan sticker name
+		var response []dto.ProductMasterListResponse
+		for _, master := range masters {
+			var categoryName *string
+			if master.CategoryID != nil {
+				var category models.Category
+				if err := db.Where("id = ?", *master.CategoryID).First(&category).Error; err == nil {
+					categoryName = &category.Name
+				}
+			}
+
+			var stickerName *string
+			if master.StickerID != nil {
+				var sticker models.Sticker
+				if err := db.Where("id = ?", *master.StickerID).First(&sticker).Error; err == nil {
+					stickerName = &sticker.Name
+				}
+			}
+
+			response = append(response, dto.ProductMasterListResponse{
+				ID:               master.ID.String(),
+				DocumentID:       master.DocumentID,
+				Barcode:          master.Barcode,
+				BarcodeWarehouse: master.BarcodeWarehouse,
+				Name:             master.Name,
+				NameWarehouse:    master.NameWarehouse,
+				Item:             master.Item,
+				ItemWarehouse:    master.ItemWarehouse,
+				Price:            master.Price,
+				PriceWarehouse:   master.PriceWarehouse,
+				NameCategory:     categoryName,
+				StickerName:      stickerName,
+				StickerID:        master.StickerID,
+				ProductPendingID: master.ProductPendingID,
+				TypeID:           master.TypeID,
+				Location:         master.Location,
+				RackStagingID:    master.RackStagingID,
+				BagID:            master.BagID,
+				IsSKU:            master.IsSKU,
+				CreatedAt:        master.CreatedAt,
+				UpdatedAt:        master.UpdatedAt,
+			})
+		}
+
+		utils.SendListSuccess(c, response, pg.Page, pg.Limit, total, "", http.StatusOK)
 	}
 }
 

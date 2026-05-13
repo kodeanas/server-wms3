@@ -7,6 +7,8 @@ import (
 	dto "wms/dto/response"
 	"wms/models"
 	"wms/repositories"
+
+	"github.com/google/uuid"
 )
 
 type RackStagingService struct {
@@ -96,7 +98,7 @@ func (s *RackStagingService) ListAllRackStaging() ([]models.RackStaging, error) 
 	return s.RackStagingRepo.FindAllRackStaging()
 }
 
-func (s *RackStagingService) ListAllRackStagingPaginated(page, limit int, search string) ([]models.RackStaging, int64, error) {
+func (s *RackStagingService) ListAllRackStagingPaginated(page, limit int, search string) ([]dto.RackStagingListResponse, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -104,7 +106,37 @@ func (s *RackStagingService) ListAllRackStagingPaginated(page, limit int, search
 		limit = 10
 	}
 	offset := (page - 1) * limit
-	return s.RackStagingRepo.FindAllRackStagingPaginated(limit, offset, search)
+
+	racks, total, err := s.RackStagingRepo.FindAllRackStagingPaginated(limit, offset, search)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	resp := make([]dto.RackStagingListResponse, 0, len(racks))
+	for _, rack := range racks {
+		rackDisplayName := ""
+		rackDisplayID := rack.RackDisplayID.String()
+
+		if s.RackDisplayRepo != nil && s.RackDisplayRepo.DB != nil && rack.RackDisplayID != uuid.Nil {
+			display, err := s.RackDisplayRepo.FindByID(rackDisplayID)
+			if err == nil && display != nil {
+				rackDisplayName = display.Name
+			}
+		}
+
+		resp = append(resp, dto.RackStagingListResponse{
+			ID:              rack.ID.String(),
+			RackDisplayID:   rackDisplayID,
+			RackDisplayName: rackDisplayName,
+			Code:            rack.Code,
+			Name:            rack.Name,
+			IsMoved:         rack.IsMoved,
+			CreatedAt:       rack.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:       rack.UpdatedAt.Format(time.RFC3339),
+		})
+	}
+
+	return resp, total, nil
 }
 
 // Finish rack staging: set is_moved, update semua product master ke display

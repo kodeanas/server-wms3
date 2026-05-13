@@ -12,6 +12,7 @@ type BagRepository interface {
 	FindAll() ([]models.Bag, error)
 	FindByType(bagType string) ([]models.Bag, error)
 	FindByTypePaginated(bagType string, limit, offset int, search string) ([]models.Bag, int64, error)
+	UpdateCargoID(bagID, cargoID string) error
 }
 
 type bagRepository struct {
@@ -64,4 +65,8 @@ func (r *bagRepository) FindByTypePaginated(bagType string, limit, offset int, s
 		return nil, 0, err
 	}
 	return bags, total, nil
+}
+
+func (r *bagRepository) UpdateCargoID(bagID, cargoID string) error {
+	return r.db.Model(&models.Bag{}).Where("id = ?", bagID).Update("cargo_id", cargoID).Error
 }

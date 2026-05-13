@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"time"
+	"wms/dto"
 	"wms/models"
 	"wms/repositories"
 
@@ -21,7 +22,7 @@ type OutboundRegulerService interface {
 	CompleteOrder(ctx interface{}) interface{}
 	GetOrderDetail(orderID string) interface{}
 	ListOrders() interface{}
-	ListOrdersPaginated(page, limit int, search string) ([]models.Order, int64, error)
+	ListOrdersPaginated(page, limit int, search string) ([]dto.OutboundRegulerListResponse, int64, error)
 	DeleteAllDiscountsByOrderID(orderID string) interface{}
 }
 
@@ -549,9 +550,28 @@ func (s *outboundRegulerService) GetOrderDetail(orderID string) interface{} {
 	if err != nil {
 		return map[string]interface{}{"error": "Order tidak ditemukan"}
 	}
+
+	buyerName := ""
+	if order.BuyerID != uuid.Nil {
+		buyer, err := s.buyerRepo.GetByID(order.BuyerID.String())
+		if err == nil && buyer != nil {
+			buyerName = buyer.Name
+		}
+	}
+
+	className := ""
+	if order.ClassID != uuid.Nil {
+		classData, err := s.classRepo.GetByID(order.ClassID.String())
+		if err == nil && classData != nil {
+			className = classData.Name
+		}
+	}
+
 	products, _ := s.productOrderRepo.ListByOrderID(orderID)
 	discounts, _ := s.discountOrderRepo.ListByOrderID(orderID)
 	return map[string]interface{}{
+		"buyer_name": buyerName,
+		"class_name": className,
 		"order":     order,
 		"products":  products,
 		"discounts": discounts,
@@ -566,7 +586,7 @@ func (s *outboundRegulerService) ListOrders() interface{} {
 	return orders
 }
 
-func (s *outboundRegulerService) ListOrdersPaginated(page, limit int, search string) ([]models.Order, int64, error) {
+func (s *outboundRegulerService) ListOrdersPaginated(page, limit int, search string) ([]dto.OutboundRegulerListResponse, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -574,7 +594,49 @@ func (s *outboundRegulerService) ListOrdersPaginated(page, limit int, search str
 		limit = 10
 	}
 	offset := (page - 1) * limit
-	return s.orderRepo.ListAllPaginated(limit, offset, search)
+
+	orders, total, err := s.orderRepo.ListAllPaginated(limit, offset, search)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	resp := make([]dto.OutboundRegulerListResponse, 0, len(orders))
+	for _, order := range orders {
+		buyerOrderName := ""
+		buyer, err := s.buyerRepo.GetByID(order.BuyerID.String())
+		if err == nil && buyer != nil {
+			buyerOrderName = buyer.Name
+		}
+
+		userID := ""
+		if order.UserID != nil {
+			userID = order.UserID.String()
+		}
+
+		ClassName := ""
+		clas, err := s.classRepo.GetByID(order.ClassID.String())
+		if err == nil && clas != nil {
+			ClassName = clas.Name
+		}
+
+		resp = append(resp, dto.OutboundRegulerListResponse{
+			OrderID:    order.ID.String(),
+			Code:       order.Code,
+			Type:       order.Type,
+			BuyerName:  buyerOrderName,
+			ClassName:  ClassName,
+			UserID:     userID,
+			Status:     order.Status,
+			IsTax:      order.IsTax,
+			Tax:        order.Tax,
+			TaxValue:   order.TaxValue,
+			TotalBox:   order.TotalBox,
+			PriceBox:   order.PriceBox,
+			GrandTotal: order.GrandTotal,
+			CreatedAt:  order.CreatedAt.Format(time.RFC3339),
+		})
+	}
+	return resp, total, nil
 }
 
 // Delete all discounts/vouchers for an order and recalculate grand total
