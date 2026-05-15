@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	dto "wms/dto/response"
 	"wms/models"
 	"wms/services"
 	"wms/utils"
@@ -46,17 +47,18 @@ func (ctrl *ClassController) GetClassByID(c *gin.Context) {
 		utils.SendError(c, 404, err.Error())
 		return
 	}
-	resp := map[string]interface{}{
-		"id":                    class.ID,
-		"name":                  class.Name,
-		"min_order":             class.MinOrder,
-		"disc":                  class.Disc,
-		"min_transaction_value": fmt.Sprintf("%.2f", class.MinTransactionValue),
-		"week":                  class.Week,
-		"iteration":             class.Iteration,
-		"status":                class.Status,
-		"created_at":            class.CreatedAt,
-		"updated_at":            class.UpdatedAt,
+	resp := dto.ClassResponse{
+		ID:                  class.ID.String(),
+		Name:                class.Name,
+		MinOrder:            class.MinOrder,
+		Disc:                class.Disc,
+		MinTransactionValue: fmt.Sprintf("%.2f", class.MinTransactionValue),
+		Week:                class.Week,
+		Iteration:           class.Iteration,
+		Status:              class.Status,
+		CreatedAt:           class.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:           class.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		DeletedAt:           class.DeletedAt,
 	}
 	utils.SendItemSuccess(c, resp, "", http.StatusOK)
 }
@@ -71,19 +73,20 @@ func (ctrl *ClassController) ListClasses(c *gin.Context) {
 		utils.SendError(c, 500, err.Error())
 		return
 	}
-	resp := make([]map[string]interface{}, 0, len(classes))
+	resp := make([]dto.ClassResponse, 0, len(classes))
 	for _, class := range classes {
-		resp = append(resp, map[string]interface{}{
-			"id":                    class.ID,
-			"name":                  class.Name,
-			"min_order":             class.MinOrder,
-			"disc":                  class.Disc,
-			"min_transaction_value": fmt.Sprintf("%.2f", class.MinTransactionValue),
-			"week":                  class.Week,
-			"iteration":             class.Iteration,
-			"status":                class.Status,
-			"created_at":            class.CreatedAt,
-			"updated_at":            class.UpdatedAt,
+		resp = append(resp, dto.ClassResponse{
+			ID:                  class.ID.String(),
+			Name:                class.Name,
+			MinOrder:            class.MinOrder,
+			Disc:                class.Disc,
+			MinTransactionValue: fmt.Sprintf("%.2f", class.MinTransactionValue),
+			Week:                class.Week,
+			Iteration:           class.Iteration,
+			Status:              class.Status,
+			CreatedAt:           class.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:           class.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			DeletedAt:           class.DeletedAt,
 		})
 	}
 	utils.SendListSuccess(c, resp, pg.Page, pg.Limit, total, "", http.StatusOK)

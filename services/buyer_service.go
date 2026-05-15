@@ -30,7 +30,9 @@ type ClassWithDecimal struct {
 type BuyerService interface {
 	CreateBuyer(input models.CreateBuyerPayload) (*models.Buyer, error)
 	GetBuyerByID(id string) (*models.Buyer, error)
+	GetBuyerDetail(id string) (*BuyerWithClass, error)
 	ListBuyersPaginated(page, limit int, search string) ([]BuyerWithClass, int64, error)
+	ListBuyersByClass(classID string, page, limit int, search string) ([]BuyerWithClass, *ClassWithDecimal, int64, error)
 	UpdateBuyer(id string, input models.UpdateBuyerPayload) (*models.Buyer, error)
 	DeleteBuyer(id string) error
 }
@@ -62,6 +64,20 @@ func (s *buyerService) CreateBuyer(input models.CreateBuyerPayload) (*models.Buy
 
 func (s *buyerService) GetBuyerByID(id string) (*models.Buyer, error) {
 	return s.repo.GetByID(id)
+}
+
+func (s *buyerService) GetBuyerDetail(id string) (*BuyerWithClass, error) {
+	buyer, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	var class *ClassWithDecimal
+	if buyer.ClassID != "" {
+		if c, err := s.classRepo.GetByID(buyer.ClassID); err == nil {
+			class = classToWithDecimal(c)
+		}
+	}
+	return &BuyerWithClass{Buyer: *buyer, Class: class}, nil
 }
 
 func classToWithDecimal(c *models.Class) *ClassWithDecimal {
@@ -105,6 +121,33 @@ func (s *buyerService) ListBuyersPaginated(page, limit int, search string) ([]Bu
 		result = append(result, BuyerWithClass{Buyer: b, Class: class})
 	}
 	return result, total, nil
+}
+
+func (s *buyerService) ListBuyersByClass(classID string, page, limit int, search string) ([]BuyerWithClass, *ClassWithDecimal, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+
+	// Validate class exists
+	classModel, err := s.classRepo.GetByID(classID)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	classInfo := classToWithDecimal(classModel)
+
+	buyers, total, err := s.repo.ListByClassID(classID, limit, offset, search)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	result := make([]BuyerWithClass, 0, len(buyers))
+	for _, b := range buyers {
+		result = append(result, BuyerWithClass{Buyer: b, Class: classInfo})
+	}
+	return result, classInfo, total, nil
 }
 
 func (s *buyerService) UpdateBuyer(id string, input models.UpdateBuyerPayload) (*models.Buyer, error) {

@@ -130,6 +130,7 @@ func SetupRoutes(r *gin.Engine) {
 		api.POST("/classes", classController.CreateClass)
 		api.GET("/classes", classController.ListClasses)
 		api.GET("/classes/:id", classController.GetClassByID)
+		api.GET("/classes/:id/buyers", buyerController.ListBuyersByClass)
 		api.PUT("/classes/:id", classController.UpdateClass)
 		api.DELETE("/classes/:id", classController.DeleteClass)
 		api.PUT("/classes/:id/up", classController.MoveUp)

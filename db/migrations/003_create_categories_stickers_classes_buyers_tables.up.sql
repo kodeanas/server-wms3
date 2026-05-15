@@ -52,15 +52,28 @@ CREATE INDEX IF NOT EXISTS idx_classes_name_min_order ON classes(name, min_order
 -- Buyer
 CREATE TABLE IF NOT EXISTS buyers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
     name VARCHAR(255),
     email VARCHAR(255),
     phone VARCHAR(20),
-    class_id CHAR(36),
+
+    class_id UUID,
+
     address VARCHAR(255),
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP
+    deleted_at TIMESTAMP,
+
+    -- 🔗 RELATION
+    CONSTRAINT fk_buyers_class
+    FOREIGN KEY (class_id)
+    REFERENCES classes(id)
+    ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_buyers_class_id ON buyers(class_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_buyers_email_phone ON buyers(email, phone);
+CREATE INDEX IF NOT EXISTS idx_buyers_class_id
+ON buyers(class_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_buyers_email_phone
+ON buyers(email, phone);
