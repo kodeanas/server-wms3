@@ -41,12 +41,28 @@ func (ctrl *BuyerController) CreateBuyer(c *gin.Context) {
 // GetBuyerByID endpoint.
 func (ctrl *BuyerController) GetBuyerByID(c *gin.Context) {
 	id := c.Param("id")
-	buyer, err := ctrl.service.GetBuyerByID(id)
+	detail, err := ctrl.service.GetBuyerDetail(id)
 	if err != nil {
 		utils.SendError(c, 404, err.Error())
 		return
 	}
-	utils.SendItemSuccess(c, buyer, "", http.StatusOK)
+	b := detail.Buyer
+	className := ""
+	if detail.Class != nil {
+		className = detail.Class.Name
+	}
+	resp := dto.BuyerResponse{
+		ID:        b.ID.String(),
+		Name:      b.Name,
+		Email:     b.Email,
+		Phone:     b.Phone,
+		ClassName: className,
+		Address:   b.Address,
+		CreatedAt: b.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: b.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		DeletedAt: b.DeletedAt,
+	}
+	utils.SendItemSuccess(c, resp, "", http.StatusOK)
 }
 
 // ListBuyers endpoint.
@@ -61,24 +77,20 @@ func (ctrl *BuyerController) ListBuyers(c *gin.Context) {
 	}
 	resp := make([]dto.BuyerResponse, 0, len(buyers))
 	for _, b := range buyers {
-		var class *dto.ClassSimpleResponse
+		ClassName := ""
 		if b.Class != nil {
-			class = &dto.ClassSimpleResponse{
-				ID:   b.Class.ID,
-				Name: b.Class.Name,
-			}
+			ClassName = b.Class.Name
 		}
 		resp = append(resp, dto.BuyerResponse{
 			ID:        b.ID.String(),
 			Name:      b.Name,
 			Email:     b.Email,
 			Phone:     b.Phone,
-			ClassID:   b.ClassID,
+			ClassName: ClassName,
 			Address:   b.Address,
 			CreatedAt: b.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 			UpdatedAt: b.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 			DeletedAt: b.DeletedAt,
-			Class:     class,
 		})
 	}
 	utils.SendListSuccess(c, resp, pg.Page, pg.Limit, total, "", http.StatusOK)
@@ -109,4 +121,46 @@ func (ctrl *BuyerController) DeleteBuyer(c *gin.Context) {
 		return
 	}
 	utils.SendSuccess(c, nil, "Buyer berhasil dihapus", nil, http.StatusOK)
+}
+
+// ListBuyersByClass endpoint: list semua buyer berdasarkan class id.
+func (ctrl *BuyerController) ListBuyersByClass(c *gin.Context) {
+	classID := c.Param("id")
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	buyers, _, total, err := ctrl.service.ListBuyersByClass(classID, pg.Page, pg.Limit, search)
+	if err != nil {
+		utils.SendError(c, 404, err.Error())
+		return
+	}
+	resp := make([]dto.BuyerClassResponse, 0, len(buyers))
+	for _, b := range buyers {
+		className := ""
+		if b.Class != nil {
+			className = b.Class.Name
+		}
+		resp = append(resp, dto.BuyerClassResponse{
+			ID:        b.ID.String(),
+			Name:      b.Name,
+			Email:     b.Email,
+			Phone:     b.Phone,
+			ClassName: className,
+			Address:   b.Address,
+		})
+	}
+
+	totalPages := 0
+	if pg.Limit > 0 {
+		totalPages = int((total + int64(pg.Limit) - 1) / int64(pg.Limit))
+	}
+	meta := map[string]interface{}{
+		"pagination": map[string]interface{}{
+			"page":        pg.Page,
+			"limit":       pg.Limit,
+			"total_items": total,
+			"total_pages": totalPages,
+		},
+	}
+	utils.SendSuccess(c, resp, "Data list berhasil diambil", meta, http.StatusOK)
 }
