@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	dto "wms/dto/response"
 	"wms/models"
 	"wms/services"
 	"wms/utils"
@@ -61,7 +62,53 @@ func (ctrl *StickerController) ListStickers(c *gin.Context) {
 		return
 	}
 
+	resp := make([]dto.StickerResponse, 0, len(stickers))
+
+	for _, s := range stickers {
+		resp = append(resp, dto.StickerResponse{
+			ID:         s.ID.String(),
+			CodeHex:    s.CodeHex,
+			Name:       s.Name,
+			Slug:       s.Slug,
+			Type:       s.Type,
+			FixedPrice: s.FixedPrice,
+			MinPrice:   (*float64)(s.MinPrice),
+			MaxPrice:   (*float64)(s.MaxPrice),
+			Status:     s.Status,
+			CreatedAt:  s.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:  s.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			DeletedAt:  s.DeletedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+		})
+	}
+
 	utils.SendListSuccess(c, stickers, pg.Page, pg.Limit, total, "", http.StatusOK)
+}
+
+func (ctrl *StickerController) ListStickerSelect(c *gin.Context) {
+	search := c.Query("search")
+
+	stickers, err := ctrl.service.ListStickers(search)
+	if err != nil {
+		utils.SendError(c, 500, err.Error())
+		return
+	}
+
+	resp := make([]dto.ListStickerSelect, 0, len(stickers))
+	for _, s := range stickers {
+		resp = append(resp, dto.ListStickerSelect{
+			ID:         s.ID.String(),
+			CodeHexx:   s.CodeHex,
+			Name:       s.Name,
+			Slug:       s.Slug,
+			Type:       s.Type,
+			FixedPrice: s.FixedPrice,
+			MinPrice:   (*float64)(s.MaxPrice),
+			MaxPrice:   (*float64)(s.MaxPrice),
+			Status:     s.Status,
+		})
+	}
+
+	utils.SendItemSuccess(c, resp, "List sticker berhasil di ambil", http.StatusOK)
 }
 
 // UpdateSticker endpoint.

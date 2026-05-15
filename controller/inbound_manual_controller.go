@@ -41,7 +41,7 @@ func ListAllProductMastersHandler(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		// Transform response dengan category name dan sticker name
-		var response []dto.ProductMasterListResponse
+		response := make([]dto.ProductMasterListResponse, 0)
 		for _, master := range masters {
 			var categoryName *string
 			if master.CategoryID != nil {
@@ -137,7 +137,7 @@ func ListProductManualHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		var results []dto.ProductManualResponse
+		results := make([]dto.ProductManualResponse, 0)
 		err := base.
 			Select(`
 				pp.id,
