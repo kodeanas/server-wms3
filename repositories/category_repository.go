@@ -16,6 +16,7 @@ type CategoryRepository interface {
 	Create(category *models.Category) error
 	GetBySlug(slug string) (*models.Category, error)
 	GetSlugLike(slug string) ([]models.Category, error)
+	List() ([]models.Category, error)
 	ListPaginated(limit, offset int, search string) ([]models.Category, int64, error)
 	GetByID(id string) (*models.Category, error)
 	Update(category *models.Category) error
@@ -56,6 +57,14 @@ func (r *categoryRepository) GetBySlug(slug string) (*models.Category, error) {
 func (r *categoryRepository) GetSlugLike(slug string) ([]models.Category, error) {
 	var categories []models.Category
 	if err := r.db.Unscoped().Where("slug LIKE ?", slug+"%").Find(&categories).Error; err != nil {
+		return nil, err
+	}
+	return categories, nil
+}
+
+func (r *categoryRepository) List() ([]models.Category, error) {
+	var categories []models.Category
+	if err := r.db.Find(&categories).Error; err != nil {
 		return nil, err
 	}
 	return categories, nil

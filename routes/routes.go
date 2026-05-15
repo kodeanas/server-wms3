@@ -108,6 +108,7 @@ func SetupRoutes(r *gin.Engine) {
 		// Categories
 		api.POST("/categories", categoryController.CreateCategory)
 		api.GET("/categories", categoryController.ListCategories)
+		api.GET("/categoriesSelect", categoryController.ListCategoriesSelect)
 		api.GET("/categories/:id", categoryController.GetCategoryByID)
 		api.PUT("/categories/:id", categoryController.UpdateCategory)
 		api.DELETE("/categories/:id", categoryController.DeleteCategory)
@@ -115,6 +116,7 @@ func SetupRoutes(r *gin.Engine) {
 		// Stickers
 		api.POST("/stickers", stickerController.CreateSticker)
 		api.GET("/stickers", stickerController.ListStickers)
+		api.GET("/stickersSelect", stickerController.ListStickerSelect)
 		api.GET("/stickers/:id", stickerController.GetStickerByID)
 		api.PUT("/stickers/:id", stickerController.UpdateSticker)
 		api.DELETE("/stickers/:id", stickerController.DeleteSticker)
@@ -171,11 +173,15 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/product-documents/bast/:id/pending-by-type", productDocumentController.GetBastPendingByType)
 		api.GET("/product-documents/sku", inboundSKUController.ListSKUProductDocuments)
 
+		//Detail Document
+		api.GET("/inbound/document/:id/summary", controller.InboundDocumentSummaryHandler(config.DB))
+		api.GET("/inbound/document/:id/products-discrepancy", controller.InboundProductListDiscrepancyHandler(config.DB))
+		api.GET("/inbound/document/:id/products-scanned", controller.InboundProductListScannedHandler(config.DB))
+
 		// Inbound Manual
 		api.GET("/inbound/list-masters", controller.ListAllProductMastersHandler(config.DB))
 		api.GET("/inbound/list-pendings", controller.ListAllProductPendingsHandler(config.DB))
 		api.GET("/inbound/manual-pending", controller.ListProductManualHandler(config.DB))
-
 		api.POST("/inbound/manual", controller.InboundManualHandler(config.DB))
 
 		//Inbound Bulk

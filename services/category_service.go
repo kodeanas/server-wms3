@@ -15,6 +15,7 @@ import (
 // CategoryService defines business logic for categories.
 type CategoryService interface {
 	CreateCategory(input models.CreateCategoryPayload) (*models.Category, error)
+	ListCategories(search string) ([]models.Category, error)
 	ListCategoriesPaginated(page, limit int, search string) ([]models.Category, int64, error)
 	GetCategoryByID(id string) (*models.Category, error)
 	UpdateCategory(id string, input models.UpdateCategoryPayload) (*models.Category, error)
@@ -232,6 +233,10 @@ func (s *categoryService) CreateCategory(input models.CreateCategoryPayload) (*m
 		return nil, err
 	}
 	return category, nil
+}
+
+func (s *categoryService) ListCategories(search string) ([]models.Category, error) {
+	return s.repo.List()
 }
 
 func (s *categoryService) ListCategoriesPaginated(page, limit int, search string) ([]models.Category, int64, error) {
