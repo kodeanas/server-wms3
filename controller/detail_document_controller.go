@@ -46,12 +46,12 @@ func InboundDocumentSummaryHandler(db *gorm.DB) gin.HandlerFunc {
 			}
 
 			current := statusMap[status]
-			current.totalItem += 1 // Hitung jumlah item list, bukan qty
-			current.totalPrice += p.Price * float64(p.Item)
+			current.totalItem += 1
+			current.totalPrice += p.Price
 			statusMap[status] = current
 
-			totalAllItem += 1 // Hitung jumlah item list, bukan qty
-			totalAllPrice += p.Price * float64(p.Item)
+			totalAllItem += 1
+			totalAllPrice += p.Price
 		}
 
 		// Helper function untuk calculate persentase
@@ -62,12 +62,13 @@ func InboundDocumentSummaryHandler(db *gorm.DB) gin.HandlerFunc {
 			return math.Round((price/totalAllPrice)*10000) / 100
 		}
 
-		// Build response dengan breakdown per status
+		// Build response dengan breakdown per status, tambahkan status dokumen
 		response := dto.InboundDocumentSummary{
 			Code:      doc.Code,
 			FileName:  doc.FileName,
 			FileItem:  doc.FileItem,
 			FilePrice: float64(doc.FilePrice),
+			Status:    doc.Status,
 			Good: dto.StatusBreakdown{
 				TotalItem:  statusMap["good"].totalItem,
 				TotalPrice: statusMap["good"].totalPrice,

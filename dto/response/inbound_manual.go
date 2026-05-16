@@ -21,6 +21,7 @@ type InboundDocumentSummary struct {
 	Non         StatusBreakdown `json:"non"`
 	Discrepancy StatusBreakdown `json:"discrepancy"`
 	File        StatusBreakdown `json:"file"`
+	Status      string          `json:"status"`
 }
 
 // InboundProductPendingResponse untuk list barang
