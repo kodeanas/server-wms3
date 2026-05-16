@@ -46,11 +46,11 @@ func InboundDocumentSummaryHandler(db *gorm.DB) gin.HandlerFunc {
 			}
 
 			current := statusMap[status]
-			current.totalItem += p.Item
+			current.totalItem += 1 // Hitung jumlah item list, bukan qty
 			current.totalPrice += p.Price * float64(p.Item)
 			statusMap[status] = current
 
-			totalAllItem += p.Item
+			totalAllItem += 1 // Hitung jumlah item list, bukan qty
 			totalAllPrice += p.Price * float64(p.Item)
 		}
 
@@ -109,18 +109,28 @@ func InboundProductListDiscrepancyHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		documentID := c.Param("id")
 		pg := utils.ParsePagination(c, 10)
+		searchName := c.Query("name")
+		searchBarcode := c.Query("barcode")
+
+		// Build query dengan base condition
+		query := db.Model(&models.ProductPending{}).
+			Where("document_id = ? AND (status = ? OR status = ? OR date_scanned IS NULL)", documentID, "discrepancy", "")
+
+		// Tambahkan search condition (prioritas: name > barcode)
+		if searchName != "" {
+			query = query.Where("name LIKE ?", "%"+searchName+"%")
+		} else if searchBarcode != "" {
+			query = query.Where("barcode LIKE ?", "%"+searchBarcode+"%")
+		}
 
 		var total int64
-		if err := db.Model(&models.ProductPending{}).
-			Where("document_id = ? AND (status = ? OR status = ? OR date_scanned IS NULL)", documentID, "discrepancy", "").
-			Count(&total).Error; err != nil {
+		if err := query.Count(&total).Error; err != nil {
 			utils.SendError(c, 500, err.Error())
 			return
 		}
 
 		var pendings []models.ProductPending
-		if err := db.Where("document_id = ? AND (status = ? OR status = ? OR date_scanned IS NULL)", documentID, "discrepancy", "").
-			Order("created_at DESC").
+		if err := query.Order("created_at DESC").
 			Limit(pg.Limit).Offset(pg.Offset).
 			Find(&pendings).Error; err != nil {
 			utils.SendError(c, 500, err.Error())
@@ -153,18 +163,28 @@ func InboundProductListScannedHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		documentID := c.Param("id")
 		pg := utils.ParsePagination(c, 10)
+		searchName := c.Query("name")
+		searchBarcode := c.Query("barcode")
+
+		// Build query dengan base condition
+		query := db.Model(&models.ProductPending{}).
+			Where("document_id = ? AND status IN (?) AND date_scanned IS NOT NULL", documentID, []string{"good", "damaged", "abnormal", "non"})
+
+		// Tambahkan search condition (prioritas: name > barcode)
+		if searchName != "" {
+			query = query.Where("name LIKE ?", "%"+searchName+"%")
+		} else if searchBarcode != "" {
+			query = query.Where("barcode LIKE ?", "%"+searchBarcode+"%")
+		}
 
 		var total int64
-		if err := db.Model(&models.ProductPending{}).
-			Where("document_id = ? AND status IN (?) AND date_scanned IS NOT NULL", documentID, []string{"good", "damaged", "abnormal", "non"}).
-			Count(&total).Error; err != nil {
+		if err := query.Count(&total).Error; err != nil {
 			utils.SendError(c, 500, err.Error())
 			return
 		}
 
 		var pendings []models.ProductPending
-		if err := db.Where("document_id = ? AND status IN (?) AND date_scanned IS NOT NULL", documentID, []string{"good", "damaged", "abnormal", "non"}).
-			Order("created_at DESC").
+		if err := query.Order("created_at DESC").
 			Limit(pg.Limit).Offset(pg.Offset).
 			Find(&pendings).Error; err != nil {
 			utils.SendError(c, 500, err.Error())
