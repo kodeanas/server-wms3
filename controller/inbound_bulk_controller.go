@@ -12,6 +12,18 @@ import (
 
 var inboundBulkService = services.NewInboundBulkService()
 
+// Handler untuk summary all BULK
+func InboundBulkSummaryAllHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		result, err := inboundBulkService.GetBulkSummaryAll(db)
+		if err != nil {
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+		utils.SendItemSuccess(c, result, "", http.StatusOK)
+	}
+}
+
 // Handler untuk upload dan proses bulk sekaligus (single step)
 func InboundBulkUploadHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"strconv"
+	response "wms/dto/response"
 	"wms/models"
 	"wms/repositories"
 	"wms/utils"
@@ -19,6 +20,7 @@ type InboundSKUService interface {
 	ListSKUProductDocumentsPaginated(page, limit int, search string) ([]models.ProductDocument, int64, error)
 	GetPendingByID(pendingID string) (*models.ProductPending, error)
 	GetDocumentByID(documentID string) (*models.ProductDocument, error)
+	GetSkuSummaryAll() (response.SkuSummaryAllResponse, error)
 }
 
 type inboundSKUService struct {
@@ -40,6 +42,18 @@ func NewInboundSKUService(
 		productRepairRepo:   productRepairRepo,
 		productMasterRepo:   productMasterRepo,
 	}
+}
+
+func (s *inboundSKUService) GetSkuSummaryAll() (response.SkuSummaryAllResponse, error) {
+	summaryMap, err := s.productDocumentRepo.GetSkuSummaryAll()
+	if err != nil {
+		return response.SkuSummaryAllResponse{}, err
+	}
+	return response.SkuSummaryAllResponse{
+		TotalDocumentUpload: int(summaryMap["total_document_upload"].(int64)),
+		TotalProductMasuk:   int(summaryMap["total_product_masuk"].(int64)),
+		TotalHargaMasuk:     summaryMap["total_harga_masuk"].(float64),
+	}, nil
 }
 
 func (s *inboundSKUService) UploadExcelAndCreatePendings(file interface{}, fileType, supplier, fileName string) (int, int, []string, error) {

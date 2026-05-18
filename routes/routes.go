@@ -186,10 +186,12 @@ func SetupRoutes(r *gin.Engine) {
 
 		//Inbound Bulk
 		api.POST("/inbound/bulk-upload", controller.InboundBulkUploadHandler(config.DB))
+		api.GET("/inbound/bulk-summary-all", controller.InboundBulkSummaryAllHandler(config.DB))
 
 		// Inbound BAST
 		api.POST("/inbound/bast-upload", controller.InboundBastUploadHandler(config.DB))
 		api.GET("/inbound/bast-summary", controller.InboundBastSummaryHandler(config.DB))
+		api.GET("/inbound/bast-summary-all", controller.InboundBastSummaryAllHandler(config.DB))
 
 		api.GET("/product-documents/bast", productDocumentController.GetBastDocuments)
 		api.GET("/inbound/bast-scanner/document/:document_id", controller.InboundBastGetDocumentHandler(config.DB))
@@ -198,6 +200,7 @@ func SetupRoutes(r *gin.Engine) {
 		api.POST("/inbound/bast-scanner/:document_id/finish", productDocumentController.FinishDocument)
 
 		// Inbound SKU
+		api.GET("/inbound-sku/summary-all", inboundSKUController.GetSummaryAll)
 		api.POST("/inbound-sku/upload", inboundSKUController.UploadExcel)
 		api.POST("/inbound-sku/crosscheck/:pending_id", inboundSKUController.CrosscheckPending)
 		api.POST("/inbound-sku/finish/:document_id", inboundSKUController.FinishInboundSKU)
@@ -206,9 +209,13 @@ func SetupRoutes(r *gin.Engine) {
 		// Rack Displays
 		api.POST("/rack-displays", rackDisplayController.Create)
 		api.GET("/rack-displays", rackDisplayController.GetAll)
+		api.GET("/rack-displays/summary-all", rackDisplayController.GetSummaryAll)
 		api.GET("/rack-displays/:id/detail", rackDisplayController.GetDetail)
 		api.PUT("/rack-displays/:id", rackDisplayController.Update)
 		api.DELETE("/rack-displays/:id", rackDisplayController.Delete)
+
+		// Rack Product
+		api.GET("/rack-product/summary-all", rackDisplayController.GetRackProductSummaryAll)
 
 		// Rack Stagings Reguler
 		api.GET("/rack-stagings", rackStagingRegulerController.ListAll)

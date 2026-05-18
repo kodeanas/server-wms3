@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	response "wms/dto/response"
 	"wms/models"
+	"wms/repositories"
 	"wms/utils"
 
 	"gorm.io/gorm"
@@ -12,12 +14,26 @@ import (
 
 type InboundBulkService interface {
 	InboundBulkProcess(req models.BulkInboundRequest, db *gorm.DB) (inserted int, skipped int, skipDetails []string)
+	GetBulkSummaryAll(db *gorm.DB) (response.BulkSummaryAllResponse, error)
 }
 
 type inboundBulkService struct{}
 
 func NewInboundBulkService() InboundBulkService {
 	return &inboundBulkService{}
+}
+
+func (s *inboundBulkService) GetBulkSummaryAll(db *gorm.DB) (response.BulkSummaryAllResponse, error) {
+	repo := repositories.NewProductDocumentRepository(db)
+	summaryMap, err := repo.GetBulkSummaryAll()
+	if err != nil {
+		return response.BulkSummaryAllResponse{}, err
+	}
+	return response.BulkSummaryAllResponse{
+		TotalDocumentUpload: int(summaryMap["total_document_upload"].(int64)),
+		TotalProductMasuk:   int(summaryMap["total_product_masuk"].(int64)),
+		TotalHargaMasuk:     summaryMap["total_harga_masuk"].(float64),
+	}, nil
 }
 
 func (s *inboundBulkService) InboundBulkProcess(req models.BulkInboundRequest, db *gorm.DB) (inserted int, skipped int, skipDetails []string) {

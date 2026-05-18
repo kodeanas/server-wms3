@@ -83,6 +83,16 @@ func (ctl *RackDisplayController) Delete(c *gin.Context) {
 	utils.SendSuccess(c, nil, "Rack display deleted successfully", nil, http.StatusOK)
 }
 
+// GET /rack-displays/summary-all
+func (ctl *RackDisplayController) GetSummaryAll(c *gin.Context) {
+	summary, err := ctl.Service.GetSummaryAllDisplay()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	utils.SendItemSuccess(c, summary, "Data summary rack display berhasil diambil", http.StatusOK)
+}
+
 // GET /rack-displays/:id/detail
 func (ctl *RackDisplayController) GetDetail(c *gin.Context) {
 	id := c.Param("id")
@@ -92,4 +102,14 @@ func (ctl *RackDisplayController) GetDetail(c *gin.Context) {
 		return
 	}
 	utils.SendItemSuccess(c, detail, "", http.StatusOK)
+}
+
+// GET /rack-product/summary-all
+func (ctl *RackDisplayController) GetRackProductSummaryAll(c *gin.Context) {
+	summary, err := ctl.Service.GetRackProductSummaryAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	utils.SendItemSuccess(c, summary, "Data product summary all rack berhasil diambil", http.StatusOK)
 }
