@@ -24,6 +24,9 @@ type ProductDocumentRepository interface {
 	UpdateDateStopByID(id string, dateStop *time.Time) error
 	FindBastDetailByID(id string) (models.ProductDocument, error)
 	UpdateStatusByID(id string, status string) error
+	GetBastSummaryAll() (map[string]interface{}, error)
+	GetBulkSummaryAll() (map[string]interface{}, error)
+	GetSkuSummaryAll() (map[string]interface{}, error)
 }
 
 // UpdateStatusByID mengubah status dokumen
@@ -208,4 +211,145 @@ func (r *productDocumentRepository) FindBastPendingSummaryByStatuses(id string, 
 // UpdateDateStopByID mengisi field date_stop pada dokumen
 func (r *productDocumentRepository) UpdateDateStopByID(id string, dateStop *time.Time) error {
 	return r.db.Model(&models.ProductDocument{}).Where("id = ?", id).Update("date_stop", dateStop).Error
+}
+
+// GetBastSummaryAll returns summary all for BAST with total inbound, scanned, and product status breakdown
+func (r *productDocumentRepository) GetBastSummaryAll() (map[string]interface{}, error) {
+	// Pakai timezone Asia/Jakarta agar "hari ini" konsisten dengan waktu lokal user.
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		loc = time.Local
+	}
+	now := time.Now().In(loc)
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	// Count total documents inbound today (type = 'bast')
+	var totalDocInbound int64
+	if err := r.db.Model(&models.ProductDocument{}).
+		Where("type = ? AND created_at >= ? AND created_at < ?", "bast", startOfDay, endOfDay).
+		Count(&totalDocInbound).Error; err != nil {
+		return nil, err
+	}
+
+	// Count total documents scanned today (type = 'bast' and status != 'progress')
+	var totalDocScanned int64
+	if err := r.db.Model(&models.ProductDocument{}).
+		Where("type = ? AND status != ? AND date_stop >= ? AND date_stop < ?", "bast", "progress", startOfDay, endOfDay).
+		Count(&totalDocScanned).Error; err != nil {
+		return nil, err
+	}
+
+	// Get product status breakdown from product_pending (not deleted and has document with type bast)
+	var statusCounts struct {
+		Good     int64 `gorm:"column:good_count"`
+		Damaged  int64 `gorm:"column:damaged_count"`
+		Abnormal int64 `gorm:"column:abnormal_count"`
+		Non      int64 `gorm:"column:non_count"`
+	}
+
+	query := r.db.Table("product_pendings pp").
+		Select(`
+			COUNT(CASE WHEN pp.status = 'good' THEN 1 END) as good_count,
+			COUNT(CASE WHEN pp.status = 'damaged' THEN 1 END) as damaged_count,
+			COUNT(CASE WHEN pp.status = 'abnormal' THEN 1 END) as abnormal_count,
+			COUNT(CASE WHEN pp.status = 'non' THEN 1 END) as non_count
+		`).
+		Joins("INNER JOIN product_documents pd ON pp.document_id::text = pd.id::text").
+		Where("pp.deleted_at IS NULL").
+		Where("pd.deleted_at IS NULL").
+		Where("pd.type = ?", "bast")
+
+	if err := query.Scan(&statusCounts).Error; err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"total_document_inbound": totalDocInbound,
+		"total_document_scanned": totalDocScanned,
+		"total_product_good":     statusCounts.Good,
+		"total_product_damaged":  statusCounts.Damaged,
+		"total_product_abnormal": statusCounts.Abnormal,
+		"total_product_non":      statusCounts.Non,
+	}, nil
+}
+
+// GetBulkSummaryAll returns summary all for BULK with total document upload, product masuk, and harga masuk
+func (r *productDocumentRepository) GetBulkSummaryAll() (map[string]interface{}, error) {
+	// Total dokumen ter-upload (type = 'bulk')
+	var totalDocUpload int64
+	if err := r.db.Model(&models.ProductDocument{}).
+		Where("type = ?", "bulk").
+		Count(&totalDocUpload).Error; err != nil {
+		return nil, err
+	}
+
+	// Total product masuk: dari product_pendings yang document.type = 'bulk'
+	var totalProductMasuk int64
+	if err := r.db.Table("product_pendings pp").
+		Joins("INNER JOIN product_documents pd ON pp.document_id::text = pd.id::text").
+		Where("pp.deleted_at IS NULL").
+		Where("pd.deleted_at IS NULL").
+		Where("pd.type = ?", "bulk").
+		Count(&totalProductMasuk).Error; err != nil {
+		return nil, err
+	}
+
+	// Total harga masuk: SUM(price_warehouse) dari product_masters yang document.type = 'bulk'
+	var totalHargaMasuk float64
+	if err := r.db.Table("product_masters pm").
+		Select("COALESCE(SUM(pm.price_warehouse), 0)").
+		Joins("INNER JOIN product_documents pd ON pm.document_id::text = pd.id::text").
+		Where("pm.deleted_at IS NULL").
+		Where("pd.deleted_at IS NULL").
+		Where("pd.type = ?", "bulk").
+		Scan(&totalHargaMasuk).Error; err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"total_document_upload": totalDocUpload,
+		"total_product_masuk":   totalProductMasuk,
+		"total_harga_masuk":     totalHargaMasuk,
+	}, nil
+}
+
+// GetSkuSummaryAll returns summary all for SKU with total document upload, product masuk, and harga masuk
+func (r *productDocumentRepository) GetSkuSummaryAll() (map[string]interface{}, error) {
+	// Total dokumen ter-upload (type = 'sku')
+	var totalDocUpload int64
+	if err := r.db.Model(&models.ProductDocument{}).
+		Where("type = ?", "sku").
+		Count(&totalDocUpload).Error; err != nil {
+		return nil, err
+	}
+
+	// Total product masuk: dari product_pendings yang document.type = 'sku'
+	var totalProductMasuk int64
+	if err := r.db.Table("product_pendings pp").
+		Joins("INNER JOIN product_documents pd ON pp.document_id::text = pd.id::text").
+		Where("pp.deleted_at IS NULL").
+		Where("pd.deleted_at IS NULL").
+		Where("pd.type = ?", "sku").
+		Count(&totalProductMasuk).Error; err != nil {
+		return nil, err
+	}
+
+	// Total harga masuk: SUM(price) dari product_pendings yang document.type = 'sku'
+	var totalHargaMasuk float64
+	if err := r.db.Table("product_pendings pp").
+		Select("COALESCE(SUM(pp.price), 0)").
+		Joins("INNER JOIN product_documents pd ON pp.document_id::text = pd.id::text").
+		Where("pp.deleted_at IS NULL").
+		Where("pd.deleted_at IS NULL").
+		Where("pd.type = ?", "sku").
+		Scan(&totalHargaMasuk).Error; err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"total_document_upload": totalDocUpload,
+		"total_product_masuk":   totalProductMasuk,
+		"total_harga_masuk":     totalHargaMasuk,
+	}, nil
 }

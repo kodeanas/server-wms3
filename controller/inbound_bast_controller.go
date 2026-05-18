@@ -53,6 +53,18 @@ func InboundBastSummaryHandler(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// Endpoint summary all inbound BAST
+func InboundBastSummaryAllHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		result, err := inboundBastService.GetBastSummaryAll(db)
+		if err != nil {
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+		utils.SendItemSuccess(c, result, "", http.StatusOK)
+	}
+}
+
 // Handler untuk upload dan proses inbound BAST
 func InboundBastUploadHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {

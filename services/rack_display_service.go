@@ -46,6 +46,10 @@ func (s *RackDisplayService) Delete(id string) error {
 	return s.Repo.SoftDelete(id)
 }
 
+func (s *RackDisplayService) GetSummaryAllDisplay() (*dto.RackDisplaySummaryAllResponse, error) {
+	return s.Repo.GetSummaryAllDisplay()
+}
+
 // GetDetail returns rack display detail with total_item, total_price, total_price_warehouse
 func (s *RackDisplayService) GetDetail(id string) (*dto.RackDisplayDetailResponse, error) {
 	// Query ke product_master untuk summary
@@ -77,4 +81,10 @@ func (s *RackDisplayService) GetDetail(id string) (*dto.RackDisplayDetailRespons
 		TotalPrice:          totalPrice,
 		TotalPriceWarehouse: totalPriceWarehouse,
 	}, nil
+}
+
+// GetRackProductSummaryAll returns summary for all rack products across all racks.
+// Contains total_item, total_price, total_price_warehouse.
+func (s *RackDisplayService) GetRackProductSummaryAll() (*dto.RackProductSummaryResponse, error) {
+	return s.Repo.GetRackProductSummaryAll()
 }

@@ -160,3 +160,12 @@ func (c *InboundSKUController) FinishInboundSKU(ctx *gin.Context) {
 	}
 	utils.SendSuccess(ctx, nil, "Inbound SKU finished", nil, http.StatusOK)
 }
+
+func (c *InboundSKUController) GetSummaryAll(ctx *gin.Context) {
+	result, err := c.Service.GetSkuSummaryAll()
+	if err != nil {
+		utils.SendError(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.SendItemSuccess(ctx, result, "", http.StatusOK)
+}

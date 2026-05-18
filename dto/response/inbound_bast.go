@@ -33,3 +33,13 @@ type InboundBastSummaryResponse struct {
 	TotalItemTerScan      int     `json:"total_item_ter_scan"`
 	TotalHargaAsalTerscan float64 `json:"total_harga_asal_terscan"`
 }
+
+// BastSummaryAllResponse is summary all for BAST documents and product status breakdown
+type BastSummaryAllResponse struct {
+	TotalDocumentInbound int `json:"total_document_inbound"`
+	TotalDocumentScanned int `json:"total_document_scanned"`
+	TotalProductGood     int `json:"total_product_good"`
+	TotalProductDamaged  int `json:"total_product_damaged"`
+	TotalProductAbnormal int `json:"total_product_abnormal"`
+	TotalProductNon      int `json:"total_product_non"`
+}

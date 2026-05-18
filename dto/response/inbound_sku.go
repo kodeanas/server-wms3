@@ -23,3 +23,10 @@ type ProductPendingDTO struct {
 	ItemGood    int     `json:"item_good"`
 	ItemDamaged int     `json:"item_damaged"`
 }
+
+// SkuSummaryAllResponse is summary all for SKU documents and product info
+type SkuSummaryAllResponse struct {
+	TotalDocumentUpload int     `json:"total_document_upload"`
+	TotalProductMasuk   int     `json:"total_product_masuk"`
+	TotalHargaMasuk     float64 `json:"total_harga_masuk"`
+}

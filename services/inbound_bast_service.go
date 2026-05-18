@@ -28,6 +28,7 @@ type InboundBastService interface {
 	GetPendingProductByBarcode(documentID, barcode string, db *gorm.DB) (*models.ProductPending, error)
 	ScanAndMoveSinglePendingToMaster(documentID, barcode string, categoryIDInput *string, statusInput string, note string, db *gorm.DB) (bool, string, string, int, error)
 	GetInboundBastSummary(db *gorm.DB, date *time.Time, dateStart *time.Time, dateEnd *time.Time) (response.InboundBastSummaryResponse, error)
+	GetBastSummaryAll(db *gorm.DB) (response.BastSummaryAllResponse, error)
 }
 
 type inboundBastService struct{}
@@ -52,6 +53,25 @@ func (s *inboundBastService) GetInboundBastSummary(db *gorm.DB, date *time.Time,
 		TotalItemTerScan:      result.TotalItemTerScan,
 		TotalHargaAsalTerscan: result.TotalHargaAsalTerscan,
 	}, nil
+}
+
+func (s *inboundBastService) GetBastSummaryAll(db *gorm.DB) (response.BastSummaryAllResponse, error) {
+	repo := repositories.NewProductDocumentRepository(db)
+	summaryMap, err := repo.GetBastSummaryAll()
+	if err != nil {
+		return response.BastSummaryAllResponse{}, err
+	}
+
+	// Map the result to response DTO
+	resp := response.BastSummaryAllResponse{
+		TotalDocumentInbound: int(summaryMap["total_document_inbound"].(int64)),
+		TotalDocumentScanned: int(summaryMap["total_document_scanned"].(int64)),
+		TotalProductGood:     int(summaryMap["total_product_good"].(int64)),
+		TotalProductDamaged:  int(summaryMap["total_product_damaged"].(int64)),
+		TotalProductAbnormal: int(summaryMap["total_product_abnormal"].(int64)),
+		TotalProductNon:      int(summaryMap["total_product_non"].(int64)),
+	}
+	return resp, nil
 }
 
 func (s *inboundBastService) ProcessBastUpload(

@@ -14,3 +14,20 @@ type RackDisplayDetailResponse struct {
 	TotalPrice          float64   `json:"total_price"`
 	TotalPriceWarehouse float64   `json:"total_price_warehouse"`
 }
+
+// RackDisplaySummaryAllResponse is summary across all rack display product lists.
+type RackDisplaySummaryAllResponse struct {
+	TotalRack         int64   `json:"total_rack"`
+	TotalItem         int64   `json:"total_item"`
+	TotalPrice        float64 `json:"total_price"`
+	TotalItemAndPrice float64 `json:"total_item_and_price"`
+}
+
+// RackProductSummaryResponse is summary of products in a rack display (virtual rack).
+// Contains total_item, total_price, total_price_warehouse, and total_item_and_price.
+type RackProductSummaryResponse struct {
+	TotalItem           int64   `json:"total_item"`
+	TotalPrice          float64 `json:"total_price"`
+	TotalPriceWarehouse float64 `json:"total_price_warehouse"`
+	TotalItemAndPrice   float64 `json:"total_item_and_price"`
+}
