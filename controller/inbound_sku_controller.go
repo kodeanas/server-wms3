@@ -59,19 +59,14 @@ func (c *InboundSKUController) UploadExcel(ctx *gin.Context) {
 	}, "Inbound BAST selesai", nil, http.StatusOK)
 }
 
-func InboundSKUGetDocumentHandler(db *gorm.DB) gin.HandlerFunc {
+// InboundSKUGetDocumentDetailHandler mengembalikan detail dokumen SKU saja
+func InboundSKUGetDocumentDetailHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		documentID := c.Param("document_id")
 		docRepo := repositories.NewProductDocumentRepository(db)
 		doc, err := docRepo.FindSkuDetailByID(documentID)
 		if err != nil {
 			utils.SendError(c, 404, "Dokumen tidak ditemukan")
-			return
-		}
-		pendingRepo := repositories.NewProductPendingRepository(db)
-		pendings, err := pendingRepo.FindByDocumentID(documentID)
-		if err != nil {
-			utils.SendError(c, 500, "Gagal mengambil data product pending")
 			return
 		}
 
@@ -86,7 +81,28 @@ func InboundSKUGetDocumentHandler(db *gorm.DB) gin.HandlerFunc {
 			Supplier:  doc.Supplier,
 		}
 
-		var productsDTO []importDto.ProductPendingDTO
+		utils.SendItemSuccess(c, docDTO, "", 200)
+	}
+}
+
+// InboundSKUGetDocumentProductsHandler mengembalikan list product pending milik dokumen SKU
+func InboundSKUGetDocumentProductsHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		documentID := c.Param("document_id")
+		docRepo := repositories.NewProductDocumentRepository(db)
+		if _, err := docRepo.FindSkuDetailByID(documentID); err != nil {
+			utils.SendError(c, 404, "Dokumen tidak ditemukan")
+			return
+		}
+
+		pendingRepo := repositories.NewProductPendingRepository(db)
+		pendings, err := pendingRepo.FindByDocumentID(documentID)
+		if err != nil {
+			utils.SendError(c, 500, "Gagal mengambil data product pending")
+			return
+		}
+
+		productsDTO := make([]importDto.ProductPendingDTO, 0, len(pendings))
 		for _, p := range pendings {
 			var dateScannedStr *string
 			if p.DateScanned != nil {
@@ -107,10 +123,7 @@ func InboundSKUGetDocumentHandler(db *gorm.DB) gin.HandlerFunc {
 			})
 		}
 
-		utils.SendItemSuccess(c, gin.H{
-			"document":        docDTO,
-			"product_pending": productsDTO,
-		}, "", 200)
+		utils.SendItemSuccess(c, productsDTO, "", 200)
 	}
 }
 

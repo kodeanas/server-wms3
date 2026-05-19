@@ -28,6 +28,7 @@ type ProductMasterService interface {
 	SetRackStaging(id string, rackStagingID string) error
 	ListByRackStagingID(rackStagingID string) ([]models.ProductMaster, error)
 	ListByRackStagingIDPaginated(rackStagingID string, page, limit int, search string) ([]models.ProductMaster, int64, error)
+	ListByRackDisplayIDPaginated(rackDisplayID string, page, limit int, search string) ([]models.ProductMaster, int64, error)
 }
 
 type productMasterService struct {
@@ -165,4 +166,16 @@ func (s *productMasterService) ListByRackStagingIDPaginated(rackStagingID string
 	}
 	offset := (page - 1) * limit
 	return s.repo.FindAllByRackStagingIDPaginated(rackStagingID, limit, offset, search)
+}
+
+// ListByRackDisplayIDPaginated mengambil semua product master yang berada di sebuah rack display
+func (s *productMasterService) ListByRackDisplayIDPaginated(rackDisplayID string, page, limit int, search string) ([]models.ProductMaster, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+	return s.repo.FindAllByRackDisplayIDPaginated(rackDisplayID, limit, offset, search)
 }

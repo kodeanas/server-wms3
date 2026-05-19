@@ -72,6 +72,11 @@ func (s *RackDisplayService) GetDetail(id string) (*dto.RackDisplayDetailRespons
 		return nil, err
 	}
 
+	summary, err := s.getRackDisplaySummaryRows(id)
+	if err != nil {
+		return nil, err
+	}
+
 	return &dto.RackDisplayDetailResponse{
 		ID:                  rack.ID.String(),
 		Code:                rack.Code,
@@ -80,7 +85,51 @@ func (s *RackDisplayService) GetDetail(id string) (*dto.RackDisplayDetailRespons
 		TotalItem:           totalItem,
 		TotalPrice:          totalPrice,
 		TotalPriceWarehouse: totalPriceWarehouse,
+		Summary:             summary,
 	}, nil
+}
+
+// getRackDisplaySummaryRows groups product_masters by category/sticker for the given rack display.
+func (s *RackDisplayService) getRackDisplaySummaryRows(rackDisplayID string) ([]dto.RackDisplaySummaryItemResponse, error) {
+	type row struct {
+		Label          string  `gorm:"column:label"`
+		Item           int64   `gorm:"column:item"`
+		Price          float64 `gorm:"column:price"`
+		PriceWarehouse float64 `gorm:"column:price_warehouse"`
+	}
+
+	rows := make([]row, 0)
+	err := s.Repo.DB.Table("product_masters pm").
+		Select(`
+			CASE
+				WHEN pm.category_id IS NOT NULL THEN CONCAT('category/', COALESCE(c.name, '-'))
+				WHEN pm.sticker_id IS NOT NULL THEN CONCAT('sticker/', COALESCE(s.name, '-'))
+				ELSE 'unknown'
+			END AS label,
+			COALESCE(SUM(pm.item), 0) AS item,
+			COALESCE(SUM(pm.price), 0) AS price,
+			COALESCE(SUM(pm.price_warehouse), 0) AS price_warehouse
+		`).
+		Joins("LEFT JOIN categories c ON c.id = pm.category_id::uuid").
+		Joins("LEFT JOIN stickers s ON s.id = pm.sticker_id::uuid").
+		Where("pm.rack_display_id = ? AND pm.deleted_at IS NULL", rackDisplayID).
+		Group("label").
+		Order("label ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]dto.RackDisplaySummaryItemResponse, 0, len(rows))
+	for _, r := range rows {
+		result = append(result, dto.RackDisplaySummaryItemResponse{
+			Label:          r.Label,
+			Item:           int(r.Item),
+			Price:          r.Price,
+			PriceWarehouse: r.PriceWarehouse,
+		})
+	}
+	return result, nil
 }
 
 // GetRackProductSummaryAll returns summary for all rack products across all racks.

@@ -48,6 +48,25 @@ func (ctl *RackDisplayController) GetAll(c *gin.Context) {
 	utils.SendListSuccess(c, racks, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
+// ListSelect mengembalikan seluruh rack display dalam bentuk ringkas (id, code, name) tanpa pagination meta,
+// dipakai untuk komponen select pada frontend.
+func (ctl *RackDisplayController) ListSelect(c *gin.Context) {
+	racks, err := ctl.Service.GetAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	resp := make([]gin.H, 0, len(racks))
+	for _, r := range racks {
+		resp = append(resp, gin.H{
+			"id":   r.ID.String(),
+			"code": r.Code,
+			"name": r.Name,
+		})
+	}
+	utils.SendItemSuccess(c, resp, "List Rack Display berhasil di ambil", http.StatusOK)
+}
+
 func (ctl *RackDisplayController) GetByID(c *gin.Context) {
 	id := c.Param("id")
 	rack, err := ctl.Service.GetByID(id)

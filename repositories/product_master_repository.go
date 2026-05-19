@@ -25,6 +25,7 @@ type ProductMasterRepository interface {
 	UpdateRackStagingID(id string, rackStagingID string) error
 	FindAllByRackStagingID(rackStagingID string) ([]models.ProductMaster, error)
 	FindAllByRackStagingIDPaginated(rackStagingID string, limit, offset int, search string) ([]models.ProductMaster, int64, error)
+	FindAllByRackDisplayIDPaginated(rackDisplayID string, limit, offset int, search string) ([]models.ProductMaster, int64, error)
 	MoveAllToDisplay(rackStagingID, rackDisplayID string) error
 	UpdateBagID(productID string, bagID string) error
 	FindByBagID(bagID string) ([]models.ProductMaster, error)
@@ -405,6 +406,28 @@ func (r *productMasterRepository) FindAllByRackStagingIDPaginated(rackStagingID 
 	)
 	query := r.db.Model(&models.ProductMaster{}).
 		Where("rack_staging_id = ? AND deleted_at IS NULL", rackStagingID)
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("barcode_warehouse ILIKE ? OR name_warehouse ILIKE ? OR barcode ILIKE ? OR name ILIKE ?", like, like, like, like)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&masters).Error; err != nil {
+		return nil, 0, err
+	}
+	return masters, total, nil
+}
+
+// Find all product masters by rack display id with pagination & search.
+// Mengambil seluruh produk yang sudah dipindahkan ke rack display (lewat banyak rack staging).
+func (r *productMasterRepository) FindAllByRackDisplayIDPaginated(rackDisplayID string, limit, offset int, search string) ([]models.ProductMaster, int64, error) {
+	var (
+		masters []models.ProductMaster
+		total   int64
+	)
+	query := r.db.Model(&models.ProductMaster{}).
+		Where("rack_display_id = ? AND deleted_at IS NULL", rackDisplayID)
 	if search != "" {
 		like := "%" + search + "%"
 		query = query.Where("barcode_warehouse ILIKE ? OR name_warehouse ILIKE ? OR barcode ILIKE ? OR name ILIKE ?", like, like, like, like)
