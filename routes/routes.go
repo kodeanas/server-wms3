@@ -187,6 +187,9 @@ func SetupRoutes(r *gin.Engine) {
 		//Inbound Bulk
 		api.POST("/inbound/bulk-upload", controller.InboundBulkUploadHandler(config.DB))
 		api.GET("/inbound/bulk-summary-all", controller.InboundBulkSummaryAllHandler(config.DB))
+		api.GET("/inbound/bulk/document/:document_id/detail", controller.InboundBulkDocumentDetailHandler(config.DB))
+		api.GET("/inbound/bulk/document/:document_id/summary", controller.InboundBulkDocumentSummaryHandler(config.DB))
+		api.GET("/inbound/bulk/document/:document_id/products", controller.InboundBulkDocumentProductsHandler(config.DB))
 
 		// Inbound BAST
 		api.POST("/inbound/bast-upload", controller.InboundBastUploadHandler(config.DB))
@@ -204,13 +207,15 @@ func SetupRoutes(r *gin.Engine) {
 		api.POST("/inbound-sku/upload", inboundSKUController.UploadExcel)
 		api.POST("/inbound-sku/crosscheck/:pending_id", inboundSKUController.CrosscheckPending)
 		api.POST("/inbound-sku/finish/:document_id", inboundSKUController.FinishInboundSKU)
-		api.GET("/inbound-sku/document/:document_id", controller.InboundSKUGetDocumentHandler(config.DB))
+		api.GET("/inbound-sku/document/:document_id/detail", controller.InboundSKUGetDocumentDetailHandler(config.DB))
+		api.GET("/inbound-sku/document/:document_id/products", controller.InboundSKUGetDocumentProductsHandler(config.DB))
 
 		// Rack Displays
 		api.POST("/rack-displays", rackDisplayController.Create)
 		api.GET("/rack-displays", rackDisplayController.GetAll)
 		api.GET("/rack-displays/summary-all", rackDisplayController.GetSummaryAll)
 		api.GET("/rack-displays/:id/detail", rackDisplayController.GetDetail)
+		api.GET("/rack-displays/:id/products", productMasterController.ListByRackDisplayID)
 		api.PUT("/rack-displays/:id", rackDisplayController.Update)
 		api.DELETE("/rack-displays/:id", rackDisplayController.Delete)
 
@@ -219,6 +224,7 @@ func SetupRoutes(r *gin.Engine) {
 
 		// Rack Stagings Reguler
 		api.GET("/rack-stagings", rackStagingRegulerController.ListAll)
+		api.GET("/rack-staging/displaySelect", rackDisplayController.ListSelect)
 		api.GET("/rack-stagings/:rackStagingID", rackStagingRegulerController.GetDetail)
 		api.POST("/rack-stagings", rackStagingRegulerController.Create)
 		api.GET("/rack-stagings/:rackStagingID/products", productMasterController.ListByRackStagingID)

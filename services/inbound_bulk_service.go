@@ -15,6 +15,9 @@ import (
 type InboundBulkService interface {
 	InboundBulkProcess(req models.BulkInboundRequest, db *gorm.DB) (inserted int, skipped int, skipDetails []string)
 	GetBulkSummaryAll(db *gorm.DB) (response.BulkSummaryAllResponse, error)
+	GetBulkDocumentDetail(documentID string, db *gorm.DB) (response.BulkDocumentDetailResponse, error)
+	GetBulkDocumentSummary(documentID string, db *gorm.DB) ([]response.BulkDocumentSummaryItemResponse, error)
+	GetBulkDocumentProducts(documentID string, page, limit int, searchName, searchBarcode string, db *gorm.DB) ([]response.BulkProductDocumentItemResponse, int64, error)
 }
 
 type inboundBulkService struct{}
@@ -34,6 +37,123 @@ func (s *inboundBulkService) GetBulkSummaryAll(db *gorm.DB) (response.BulkSummar
 		TotalProductMasuk:   int(summaryMap["total_product_masuk"].(int64)),
 		TotalHargaMasuk:     summaryMap["total_harga_masuk"].(float64),
 	}, nil
+}
+
+func (s *inboundBulkService) GetBulkDocumentDetail(documentID string, db *gorm.DB) (response.BulkDocumentDetailResponse, error) {
+	repo := repositories.NewProductDocumentRepository(db)
+	doc, err := repo.FindBulkDetailByID(documentID)
+	if err != nil {
+		return response.BulkDocumentDetailResponse{}, err
+	}
+
+	return response.BulkDocumentDetailResponse{
+		ID:         doc.ID.String(),
+		Code:       doc.Code,
+		Nama:       doc.FileName,
+		TotalPrice: float64(doc.FilePrice),
+		TotalItem:  doc.FileItem,
+	}, nil
+}
+
+func (s *inboundBulkService) GetBulkDocumentSummary(documentID string, db *gorm.DB) ([]response.BulkDocumentSummaryItemResponse, error) {
+	repo := repositories.NewProductDocumentRepository(db)
+	if _, err := repo.FindBulkDetailByID(documentID); err != nil {
+		return nil, err
+	}
+	return s.getBulkDocumentSummaryRows(documentID, db)
+}
+
+func (s *inboundBulkService) getBulkDocumentSummaryRows(documentID string, db *gorm.DB) ([]response.BulkDocumentSummaryItemResponse, error) {
+	type bulkSummaryRow struct {
+		Label          string  `gorm:"column:label"`
+		Item           int64   `gorm:"column:item"`
+		Price          float64 `gorm:"column:price"`
+		PriceWarehouse float64 `gorm:"column:price_warehouse"`
+	}
+
+	rows := make([]bulkSummaryRow, 0)
+	err := db.Table("product_masters pm").
+		Select(`
+			CASE
+				WHEN pm.category_id IS NOT NULL THEN CONCAT('category/', COALESCE(c.name, '-'))
+				WHEN pm.sticker_id IS NOT NULL THEN CONCAT('sticker/', COALESCE(s.name, '-'))
+				ELSE 'unknown'
+			END AS label,
+			COALESCE(SUM(pm.item), 0) AS item,
+			COALESCE(SUM(pm.price), 0) AS price,
+			COALESCE(SUM(pm.price_warehouse), 0) AS price_warehouse
+		`).
+		Joins("LEFT JOIN categories c ON c.id = pm.category_id::uuid").
+		Joins("LEFT JOIN stickers s ON s.id = pm.sticker_id::uuid").
+		Where("pm.document_id = ? AND pm.deleted_at IS NULL", documentID).
+		Group("label").
+		Order("label ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]response.BulkDocumentSummaryItemResponse, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, response.BulkDocumentSummaryItemResponse{
+			Label:          row.Label,
+			Item:           int(row.Item),
+			Price:          row.Price,
+			PriceWarehouse: row.PriceWarehouse,
+		})
+	}
+
+	return result, nil
+}
+
+func (s *inboundBulkService) GetBulkDocumentProducts(documentID string, page, limit int, searchName, searchBarcode string, db *gorm.DB) ([]response.BulkProductDocumentItemResponse, int64, error) {
+	repo := repositories.NewProductDocumentRepository(db)
+	if _, err := repo.FindBulkDetailByID(documentID); err != nil {
+		return nil, 0, err
+	}
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+
+	query := db.Model(&models.ProductPending{}).
+		Where("document_id = ?", documentID)
+
+	if searchName != "" {
+		query = query.Where("name LIKE ?", "%"+searchName+"%")
+	} else if searchBarcode != "" {
+		query = query.Where("barcode LIKE ?", "%"+searchBarcode+"%")
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var pendings []models.ProductPending
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&pendings).Error; err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]response.BulkProductDocumentItemResponse, 0, len(pendings))
+	for _, p := range pendings {
+		result = append(result, response.BulkProductDocumentItemResponse{
+			ID:          p.ID.String(),
+			Barcode:     p.Barcode,
+			Name:        p.Name,
+			Item:        p.Item,
+			Price:       p.Price,
+			Status:      p.Status,
+			Note:        p.Note,
+			DateScanned: p.DateScanned,
+		})
+	}
+
+	return result, total, nil
 }
 
 func (s *inboundBulkService) InboundBulkProcess(req models.BulkInboundRequest, db *gorm.DB) (inserted int, skipped int, skipDetails []string) {

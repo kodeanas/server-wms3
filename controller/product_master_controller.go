@@ -204,6 +204,49 @@ func (ctl *ProductMasterController) ListByRackStagingID(c *gin.Context) {
 	utils.SendListSuccess(c, resp, pg.Page, pg.Limit, total, "", http.StatusOK)
 }
 
+// List all product master di sebuah rack display (gabungan dari semua rack staging yang sudah pindah ke display ini)
+func (ctl *ProductMasterController) ListByRackDisplayID(c *gin.Context) {
+	rackDisplayID := c.Param("id")
+	if rackDisplayID == "" {
+		utils.SendError(c, 400, "Kolom id kosong")
+		return
+	}
+	pg := utils.ParsePagination(c, 10)
+	search := c.Query("search")
+
+	masters, total, err := ctl.service.ListByRackDisplayIDPaginated(rackDisplayID, pg.Page, pg.Limit, search)
+	if err != nil {
+		utils.SendError(c, 500, err.Error())
+		return
+	}
+
+	resp := make([]dto.ProductMasterRackStagingResponse, 0, len(masters))
+	catRepo := repositories.NewCategoryRepository(config.DB)
+	for _, m := range masters {
+		var categoryName *string
+		if m.CategoryID != nil {
+			cat, err := catRepo.GetByID(*m.CategoryID)
+			if err == nil && cat != nil {
+				categoryName = &cat.Name
+			}
+		}
+		resp = append(resp, dto.ProductMasterRackStagingResponse{
+			ID:               m.ID.String(),
+			BarcodeWarehouse: m.BarcodeWarehouse,
+			NameWarehouse:    m.NameWarehouse,
+			ItemWarehouse:    m.ItemWarehouse,
+			PriceWarehouse:   m.PriceWarehouse,
+			CategoryID:       m.CategoryID,
+			CategoryName:     categoryName,
+			StickerID:        m.StickerID,
+			CreatedAt:        m.CreatedAt,
+			UpdatedAt:        m.UpdatedAt,
+			DeletedAt:        m.DeletedAt,
+		})
+	}
+	utils.SendListSuccess(c, resp, pg.Page, pg.Limit, total, "", http.StatusOK)
+}
+
 // Helper untuk validasi rack staging sudah di-lock
 func IsRackStagingLocked(rackStagingID string) (bool, error) {
 	repo := repositories.NewRackStagingRepository(config.DB)

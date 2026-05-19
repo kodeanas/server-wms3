@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
+	response "wms/dto/response"
 	"wms/models"
 	"wms/services"
 	"wms/utils"
@@ -21,6 +23,70 @@ func InboundBulkSummaryAllHandler(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		utils.SendItemSuccess(c, result, "", http.StatusOK)
+	}
+}
+
+// Handler untuk detail dokumen BULK (code, nama, totalprice, total item)
+func InboundBulkDocumentDetailHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		documentID := c.Param("document_id")
+
+		result, err := inboundBulkService.GetBulkDocumentDetail(documentID, db)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				utils.SendError(c, http.StatusNotFound, "Dokumen BULK tidak ditemukan")
+				return
+			}
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+
+		utils.SendItemSuccess(c, result, "", http.StatusOK)
+	}
+}
+
+// Handler untuk summary dokumen BULK (per category/sticker)
+func InboundBulkDocumentSummaryHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		documentID := c.Param("document_id")
+
+		result, err := inboundBulkService.GetBulkDocumentSummary(documentID, db)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				utils.SendError(c, http.StatusNotFound, "Dokumen BULK tidak ditemukan")
+				return
+			}
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+
+		utils.SendItemSuccess(c, result, "", http.StatusOK)
+	}
+}
+
+// Handler untuk list produk berdasarkan document BULK
+func InboundBulkDocumentProductsHandler(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		documentID := c.Param("document_id")
+		pg := utils.ParsePagination(c, 10)
+		searchName := c.Query("name")
+		searchBarcode := c.Query("barcode")
+
+		products, total, err := inboundBulkService.GetBulkDocumentProducts(documentID, pg.Page, pg.Limit, searchName, searchBarcode, db)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				utils.SendError(c, http.StatusNotFound, "Dokumen BULK tidak ditemukan")
+				return
+			}
+			utils.SendError(c, 500, err.Error())
+			return
+		}
+
+		if products == nil {
+			products = make([]response.BulkProductDocumentItemResponse, 0)
+		}
+
+		utils.SendListSuccess(c, products, pg.Page, pg.Limit, total, "", http.StatusOK)
 	}
 }
 
